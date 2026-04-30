@@ -15,7 +15,7 @@ const serviceIcons: Record<string, string> = {
 }
 
 async function getTodaysJobs(): Promise<Job[]> {
-  const today = new Date().toLocaleDateString('en-CA')
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
   const { data, error } = await supabase
     .from('jobs')
     .select('*')
