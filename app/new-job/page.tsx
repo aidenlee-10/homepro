@@ -1,8 +1,9 @@
 'use client'
 
-import { FormEvent, Suspense, useState } from 'react'
+import { FormEvent, Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import type { Customer } from '@/lib/supabase'
 
 const supabase = createClient()
 
@@ -72,7 +73,10 @@ function NewJobForm() {
   const searchParams = useSearchParams()
   const prefilledDate = searchParams.get('date')
   const [prefilledYear = '', prefilledMonth = '', prefilledDay = ''] = prefilledDate?.split('-') ?? []
-  const [customerName, setCustomerName] = useState('')
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [customersLoaded, setCustomersLoaded] = useState(false)
+  const [customerChoice, setCustomerChoice] = useState('')
+  const [newCustomerName, setNewCustomerName] = useState('')
   const [address, setAddress] = useState('')
   const [month, setMonth] = useState(prefilledMonth)
   const [day, setDay] = useState(prefilledDay)
@@ -86,6 +90,28 @@ function NewJobForm() {
   const [status] = useState<'scheduled'>('scheduled')
   const [isSaving, setIsSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadCustomers() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user || cancelled) return
+      const { data: company } = await supabase.from('companies').select('id').eq('owner_id', user.id).maybeSingle()
+      if (!company || cancelled) return
+      const { data, error } = await supabase.from('customers').select('*').eq('company_id', company.id).order('name', { ascending: true })
+      if (!cancelled) {
+        if (error) console.error('Error loading customers:', error.message)
+        setCustomers(data ?? [])
+        setCustomersLoaded(true)
+      }
+    }
+    loadCustomers()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -132,6 +158,18 @@ function NewJobForm() {
       return
     }
 
+    if (!customerChoice) {
+      setErrorMessage('Please select a customer.')
+      setIsSaving(false)
+      return
+    }
+
+    if (customerChoice === '__new__' && !newCustomerName.trim()) {
+      setErrorMessage('Please enter the new customer name.')
+      setIsSaving(false)
+      return
+    }
+
     const hourNumber = Number(hour)
     const twentyFourHour = meridiem === 'AM' ? (hourNumber % 12) : ((hourNumber % 12) + 12)
     // Build month/day from validated numeric parts so month is always 01-12 (never 0-based).
@@ -162,9 +200,46 @@ function NewJobForm() {
       return
     }
 
+    let customerId: string | null = null
+    let resolvedCustomerName = ''
+
+    if (customerChoice === '__new__') {
+      resolvedCustomerName = newCustomerName.trim()
+      const { data: newCustomer, error: insertCustomerError } = await supabase
+        .from('customers')
+        .insert({
+          company_id: company.id,
+          name: resolvedCustomerName,
+          phone: null,
+          email: null,
+          address: address.trim() || null,
+          notes: null,
+        })
+        .select('id')
+        .maybeSingle()
+
+      if (insertCustomerError || !newCustomer?.id) {
+        console.error('Error creating customer:', insertCustomerError?.message)
+        setErrorMessage(insertCustomerError?.message ?? 'Could not create customer.')
+        setIsSaving(false)
+        return
+      }
+      customerId = newCustomer.id as string
+    } else {
+      const selected = customers.find(c => c.id === customerChoice)
+      if (!selected) {
+        setErrorMessage('Selected customer not found.')
+        setIsSaving(false)
+        return
+      }
+      customerId = selected.id
+      resolvedCustomerName = selected.name
+    }
+
     const { error } = await supabase.from('jobs').insert({
       company_id: company.id,
-      customer_name: customerName.trim(),
+      customer_id: customerId,
+      customer_name: resolvedCustomerName,
       address: address.trim(),
       date: normalizedDate,
       time: normalizedTime,
@@ -198,19 +273,50 @@ function NewJobForm() {
       <main className="max-w-lg mx-auto px-4 py-6">
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-100 p-5 space-y-4">
           <div>
-            <label htmlFor="customerName" className="text-sm font-medium text-slate-700">
-              Customer name
+            <label htmlFor="customer" className="text-sm font-medium text-slate-700">
+              Customer
             </label>
-            <input
-              id="customerName"
-              type="text"
-              value={customerName}
-              onChange={e => setCustomerName(e.target.value)}
+            <select
+              id="customer"
+              value={customerChoice}
+              onChange={e => {
+                const value = e.target.value
+                setCustomerChoice(value)
+                if (value && value !== '__new__') {
+                  const selected = customers.find(c => c.id === value)
+                  if (selected?.address) setAddress(selected.address)
+                }
+              }}
               required
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Jane Smith"
-            />
+              disabled={!customersLoaded}
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
+            >
+              <option value="">{customersLoaded ? 'Select customer…' : 'Loading customers…'}</option>
+              {customers.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+              <option value="__new__">Add new customer…</option>
+            </select>
           </div>
+
+          {customerChoice === '__new__' ? (
+            <div>
+              <label htmlFor="newCustomerName" className="text-sm font-medium text-slate-700">
+                New customer name
+              </label>
+              <input
+                id="newCustomerName"
+                type="text"
+                value={newCustomerName}
+                onChange={e => setNewCustomerName(e.target.value)}
+                required
+                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Jane Smith"
+              />
+            </div>
+          ) : null}
 
           <div>
             <label htmlFor="address" className="text-sm font-medium text-slate-700">
