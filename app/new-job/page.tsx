@@ -109,6 +109,20 @@ function NewJobForm() {
       return
     }
 
+    const monthIndex = monthOptions.findIndex(option => option.value === month)
+    if (monthIndex === -1) {
+      setErrorMessage('Please select a valid month.')
+      setIsSaving(false)
+      return
+    }
+
+    const dayNumber = Number(day)
+    if (Number.isNaN(dayNumber) || dayNumber < 1 || dayNumber > 31) {
+      setErrorMessage('Please select a valid day.')
+      setIsSaving(false)
+      return
+    }
+
     const resolvedServiceType = serviceType === 'Other' ? customService.trim() : serviceType
     if (!resolvedServiceType) {
       setErrorMessage('Please enter a custom service type.')
@@ -118,7 +132,10 @@ function NewJobForm() {
 
     const hourNumber = Number(hour)
     const twentyFourHour = meridiem === 'AM' ? (hourNumber % 12) : ((hourNumber % 12) + 12)
-    const normalizedDate = `${year.trim()}-${month}-${day}`
+    // Build month/day from validated numeric parts so month is always 01-12 (never 0-based).
+    const normalizedMonth = String(monthIndex + 1).padStart(2, '0')
+    const normalizedDay = String(dayNumber).padStart(2, '0')
+    const normalizedDate = `${year.trim()}-${normalizedMonth}-${normalizedDay}`
     const normalizedTime = `${String(twentyFourHour).padStart(2, '0')}:${minute}`
 
     const { error } = await supabase.from('jobs').insert({
