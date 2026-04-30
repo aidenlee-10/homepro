@@ -1,8 +1,12 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase, Job } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
+import { Job } from '@/lib/supabase'
+
+const supabase = createClient()
 
 const statusConfig = {
   scheduled: { label: 'Scheduled', bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' },
@@ -24,6 +28,7 @@ type DashboardClientProps = {
 }
 
 export function DashboardClient({ initialJobs, todayLabel }: DashboardClientProps) {
+  const router = useRouter()
   const [jobs, setJobs] = useState<Job[]>(initialJobs)
   const [busyId, setBusyId] = useState<string | null>(null)
 
@@ -49,6 +54,12 @@ export function DashboardClient({ initialJobs, todayLabel }: DashboardClientProp
     }
   }
 
+  async function signOut() {
+    await supabase.auth.signOut()
+    router.push('/login')
+    router.refresh()
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-10">
@@ -70,6 +81,13 @@ export function DashboardClient({ initialJobs, todayLabel }: DashboardClientProp
             >
               + Add Job
             </Link>
+            <button
+              type="button"
+              onClick={signOut}
+              className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Sign Out
+            </button>
             <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold">
               JP
             </div>

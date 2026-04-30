@@ -1,9 +1,11 @@
 import { CalendarClient } from './calendar-client'
-import { supabase, Job } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
+import { Job } from '@/lib/supabase'
 
 const NEW_YORK_TIME_ZONE = 'America/New_York'
 
 async function getAllJobs(): Promise<Job[]> {
+  const supabase = await createClient()
   const { data, error } = await supabase.from('jobs').select('*').order('date', { ascending: true }).order('time', { ascending: true })
 
   if (error) {

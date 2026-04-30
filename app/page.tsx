@@ -1,9 +1,11 @@
-import { supabase, Job } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/server'
+import { Job } from '@/lib/supabase'
 import { DashboardClient } from './dashboard-client'
 
 const NEW_YORK_TIME_ZONE = 'America/New_York'
 
 async function getTodaysJobs(): Promise<Job[]> {
+  const supabase = await createClient()
   const today = new Date().toLocaleDateString('en-CA', { timeZone: NEW_YORK_TIME_ZONE })
   const { data, error } = await supabase
     .from('jobs')
