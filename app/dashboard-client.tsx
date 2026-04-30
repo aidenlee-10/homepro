@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { supabase, Job } from '@/lib/supabase'
 
 const statusConfig = {
@@ -56,7 +57,17 @@ export function DashboardClient({ initialJobs, todayLabel }: DashboardClientProp
             <h1 className="text-xl font-bold text-slate-900">HomePro</h1>
             <p className="text-sm text-slate-400">{todayLabel}</p>
           </div>
-          <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold">JP</div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/new-job"
+              className="text-xs font-medium px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            >
+              + Add Job
+            </Link>
+            <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold">
+              JP
+            </div>
+          </div>
         </div>
       </header>
 
