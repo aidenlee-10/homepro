@@ -6,10 +6,26 @@ const NEW_YORK_TIME_ZONE = 'America/New_York'
 
 async function getTodaysJobs(): Promise<Job[]> {
   const supabase = await createClient()
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+  if (userError || !user) {
+    if (userError) console.error('Error fetching user:', userError.message)
+    return []
+  }
+
+  const { data: company, error: companyError } = await supabase.from('companies').select('id').eq('owner_id', user.id).maybeSingle()
+  if (companyError || !company) {
+    if (companyError) console.error('Error fetching company:', companyError.message)
+    return []
+  }
+
   const today = new Date().toLocaleDateString('en-CA', { timeZone: NEW_YORK_TIME_ZONE })
   const { data, error } = await supabase
     .from('jobs')
     .select('*')
+    .eq('company_id', company.id)
     .eq('date', today)
     .order('time', { ascending: true })
   if (error) {

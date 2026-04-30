@@ -140,7 +140,30 @@ function NewJobForm() {
     const normalizedDate = `${year.trim()}-${normalizedMonth}-${normalizedDay}`
     const normalizedTime = `${String(twentyFourHour).padStart(2, '0')}:${minute}`
 
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+    if (userError || !user) {
+      setErrorMessage(userError?.message ?? 'You must be signed in to create a job.')
+      setIsSaving(false)
+      return
+    }
+
+    const { data: company, error: companyError } = await supabase
+      .from('companies')
+      .select('id')
+      .eq('owner_id', user.id)
+      .maybeSingle()
+
+    if (companyError || !company) {
+      setErrorMessage(companyError?.message ?? 'No company found for your account.')
+      setIsSaving(false)
+      return
+    }
+
     const { error } = await supabase.from('jobs').insert({
+      company_id: company.id,
       customer_name: customerName.trim(),
       address: address.trim(),
       date: normalizedDate,

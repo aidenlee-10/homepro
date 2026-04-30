@@ -3,6 +3,7 @@ export const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 export type Job = {
   id: string
+  company_id: string
   customer_name: string
   address: string
   date: string
