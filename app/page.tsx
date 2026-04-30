@@ -1,8 +1,10 @@
 import { supabase, Job } from '@/lib/supabase'
 import { DashboardClient } from './dashboard-client'
 
+const NEW_YORK_TIME_ZONE = 'America/New_York'
+
 async function getTodaysJobs(): Promise<Job[]> {
-  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: NEW_YORK_TIME_ZONE })
   const { data, error } = await supabase
     .from('jobs')
     .select('*')
@@ -21,6 +23,7 @@ export default async function DashboardPage() {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
+    timeZone: NEW_YORK_TIME_ZONE,
   })
 
   return <DashboardClient initialJobs={jobs} todayLabel={todayLabel} />

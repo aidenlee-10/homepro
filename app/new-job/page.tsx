@@ -1,7 +1,7 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 const monthOptions = [
@@ -67,11 +67,14 @@ const serviceOptions = [
 
 export default function NewJobPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const prefilledDate = searchParams.get('date')
+  const [prefilledYear = '', prefilledMonth = '', prefilledDay = ''] = prefilledDate?.split('-') ?? []
   const [customerName, setCustomerName] = useState('')
   const [address, setAddress] = useState('')
-  const [month, setMonth] = useState('')
-  const [day, setDay] = useState('')
-  const [year, setYear] = useState('')
+  const [month, setMonth] = useState(prefilledMonth)
+  const [day, setDay] = useState(prefilledDay)
+  const [year, setYear] = useState(prefilledYear)
   const [hour, setHour] = useState('')
   const [minute, setMinute] = useState('')
   const [meridiem, setMeridiem] = useState<'AM' | 'PM'>('AM')
