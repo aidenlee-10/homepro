@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { FormEvent, Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
@@ -65,7 +65,7 @@ const serviceOptions = [
   'Other',
 ] as const
 
-export default function NewJobPage() {
+function NewJobForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const prefilledDate = searchParams.get('date')
@@ -350,5 +350,28 @@ export default function NewJobPage() {
         </form>
       </main>
     </div>
+  )
+}
+
+export default function NewJobPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50">
+          <header className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-10">
+            <div className="max-w-lg mx-auto">
+              <h1 className="text-xl font-bold text-slate-900">New Job</h1>
+            </div>
+          </header>
+          <main className="max-w-lg mx-auto px-4 py-6">
+            <div className="bg-white rounded-2xl border border-slate-100 p-5">
+              <p className="text-sm text-slate-400">Loading form…</p>
+            </div>
+          </main>
+        </div>
+      }
+    >
+      <NewJobForm />
+    </Suspense>
   )
 }
