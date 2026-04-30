@@ -3,6 +3,11 @@
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { Job } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase/client'
+import { EditJobPayload, JobEditModal } from '@/app/components/job-edit-modal'
+import { DeleteJobModal } from '@/app/components/delete-job-modal'
+
+const supabase = createClient()
 
 const statusConfig = {
   scheduled: { label: 'Scheduled', bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' },
@@ -63,18 +68,23 @@ function formatTimeLabel(time: string) {
 export function CalendarClient({ initialJobs, initialDate }: CalendarClientProps) {
   const normalizedInitialDate = normalizeDateString(initialDate)
   const initialParts = parseDateParts(normalizedInitialDate)
+  const [jobs, setJobs] = useState<Job[]>(initialJobs)
   const [viewYear, setViewYear] = useState(initialParts.year)
   const [viewMonth, setViewMonth] = useState(initialParts.month - 1)
   const [selectedDate, setSelectedDate] = useState(normalizedInitialDate)
+  const [editingJob, setEditingJob] = useState<Job | null>(null)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [deletingJobId, setDeletingJobId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const jobsByDate = useMemo(() => {
-    return initialJobs.reduce<Record<string, Job[]>>((acc, job) => {
+    return jobs.reduce<Record<string, Job[]>>((acc, job) => {
       const normalizedJobDate = normalizeDateString(job.date)
       if (!acc[normalizedJobDate]) acc[normalizedJobDate] = []
       acc[normalizedJobDate].push(job)
       return acc
     }, {})
-  }, [initialJobs])
+  }, [jobs])
 
   const selectedJobs = useMemo(() => {
     return [...(jobsByDate[selectedDate] ?? [])].sort((a, b) => a.time.localeCompare(b.time))
@@ -126,6 +136,41 @@ export function CalendarClient({ initialJobs, initialDate }: CalendarClientProps
 
     setViewMonth(prev => prev + 1)
     setSelectedDate(`${viewYear}-${String(viewMonth + 2).padStart(2, '0')}-01`)
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deletingJobId) return
+    setIsDeleting(true)
+    const previousJobs = jobs
+    setJobs(prev => prev.filter(job => job.id !== deletingJobId))
+
+    const { error } = await supabase.from('jobs').delete().eq('id', deletingJobId)
+    if (error) {
+      console.error('Error deleting job:', error.message)
+      setJobs(previousJobs)
+    }
+    setIsDeleting(false)
+    setDeletingJobId(null)
+  }
+
+  async function handleSaveEdit(payload: EditJobPayload) {
+    if (!editingJob) return
+    setSavingEdit(true)
+    const targetId = editingJob.id
+    const previousJobs = jobs
+    const nextJobs = jobs.map(job => (job.id === targetId ? { ...job, ...payload } : job))
+    setJobs(nextJobs)
+
+    const { error } = await supabase.from('jobs').update(payload).eq('id', targetId)
+    if (error) {
+      console.error('Error updating job:', error.message)
+      setJobs(previousJobs)
+      setSavingEdit(false)
+      throw new Error('Could not save job changes.')
+    }
+
+    setEditingJob(null)
+    setSavingEdit(false)
   }
 
   return (
@@ -295,9 +340,17 @@ export function CalendarClient({ initialJobs, initialDate }: CalendarClientProps
                       <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
                       {status.label}
                     </span>
-                    <Link href={`/new-job?date=${job.date}`} className="text-xs text-blue-600 font-medium hover:text-blue-700">
-                      Book another on this date →
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <button type="button" className="text-xs text-blue-600 font-medium hover:text-blue-700">
+                        View details →
+                      </button>
+                      <button type="button" onClick={() => setEditingJob(job)} className="text-xs text-slate-600 font-medium hover:text-slate-800">
+                        Edit
+                      </button>
+                      <button type="button" onClick={() => setDeletingJobId(job.id)} className="text-xs text-red-600 font-medium hover:text-red-700">
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               )
@@ -305,6 +358,12 @@ export function CalendarClient({ initialJobs, initialDate }: CalendarClientProps
           )}
         </section>
       </main>
+      {editingJob ? (
+        <JobEditModal job={editingJob} isSaving={savingEdit} onClose={() => !savingEdit && setEditingJob(null)} onSave={handleSaveEdit} />
+      ) : null}
+      {deletingJobId ? (
+        <DeleteJobModal isDeleting={isDeleting} onCancel={() => !isDeleting && setDeletingJobId(null)} onConfirm={handleDeleteConfirm} />
+      ) : null}
     </div>
   )
 }

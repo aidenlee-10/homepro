@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Job } from '@/lib/supabase'
+import { EditJobPayload, JobEditModal } from '@/app/components/job-edit-modal'
+import { DeleteJobModal } from '@/app/components/delete-job-modal'
 
 const supabase = createClient()
 
@@ -31,6 +33,10 @@ export function DashboardClient({ initialJobs, todayLabel }: DashboardClientProp
   const router = useRouter()
   const [jobs, setJobs] = useState<Job[]>(initialJobs)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [editingJob, setEditingJob] = useState<Job | null>(null)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [deletingJobId, setDeletingJobId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const completed = useMemo(() => jobs.filter(j => j.status === 'completed'), [jobs])
   const revenue = useMemo(() => completed.reduce((sum, j) => sum + j.price, 0), [completed])
@@ -58,6 +64,41 @@ export function DashboardClient({ initialJobs, todayLabel }: DashboardClientProp
     await supabase.auth.signOut()
     router.push('/login')
     router.refresh()
+  }
+
+  async function handleDeleteConfirm() {
+    if (!deletingJobId) return
+    setIsDeleting(true)
+    const previousJobs = jobs
+    setJobs(prev => prev.filter(job => job.id !== deletingJobId))
+
+    const { error } = await supabase.from('jobs').delete().eq('id', deletingJobId)
+    if (error) {
+      console.error('Error deleting job:', error.message)
+      setJobs(previousJobs)
+    }
+    setIsDeleting(false)
+    setDeletingJobId(null)
+  }
+
+  async function handleSaveEdit(payload: EditJobPayload) {
+    if (!editingJob) return
+    setSavingEdit(true)
+    const targetId = editingJob.id
+    const previousJobs = jobs
+    const nextJobs = jobs.map(job => (job.id === targetId ? { ...job, ...payload } : job))
+    setJobs(nextJobs)
+
+    const { error } = await supabase.from('jobs').update(payload).eq('id', targetId)
+    if (error) {
+      console.error('Error updating job:', error.message)
+      setJobs(previousJobs)
+      setSavingEdit(false)
+      throw new Error('Could not save job changes.')
+    }
+
+    setEditingJob(null)
+    setSavingEdit(false)
   }
 
   return (
@@ -163,6 +204,20 @@ export function DashboardClient({ initialJobs, todayLabel }: DashboardClientProp
                       <button type="button" className="text-xs text-blue-600 font-medium hover:text-blue-700">
                         View details →
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingJob(job)}
+                        className="text-xs text-slate-600 font-medium hover:text-slate-800"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeletingJobId(job.id)}
+                        className="text-xs text-red-600 font-medium hover:text-red-700"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -171,6 +226,12 @@ export function DashboardClient({ initialJobs, todayLabel }: DashboardClientProp
           )}
         </div>
       </main>
+      {editingJob ? (
+        <JobEditModal job={editingJob} isSaving={savingEdit} onClose={() => !savingEdit && setEditingJob(null)} onSave={handleSaveEdit} />
+      ) : null}
+      {deletingJobId ? (
+        <DeleteJobModal isDeleting={isDeleting} onCancel={() => !isDeleting && setDeletingJobId(null)} onConfirm={handleDeleteConfirm} />
+      ) : null}
     </div>
   )
 }
