@@ -359,7 +359,13 @@ export function CalendarClient({ initialJobs, initialDate }: CalendarClientProps
         </section>
       </main>
       {editingJob ? (
-        <JobEditModal job={editingJob} isSaving={savingEdit} onClose={() => !savingEdit && setEditingJob(null)} onSave={handleSaveEdit} />
+        <JobEditModal
+          key={editingJob.id}
+          job={editingJob}
+          isSaving={savingEdit}
+          onClose={() => !savingEdit && setEditingJob(null)}
+          onSave={handleSaveEdit}
+        />
       ) : null}
       {deletingJobId ? (
         <DeleteJobModal isDeleting={isDeleting} onCancel={() => !isDeleting && setDeletingJobId(null)} onConfirm={handleDeleteConfirm} />

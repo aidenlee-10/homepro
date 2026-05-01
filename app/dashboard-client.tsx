@@ -123,6 +123,12 @@ export function DashboardClient({ initialJobs, todayLabel }: DashboardClientProp
               Customers
             </Link>
             <Link
+              href="/workers"
+              className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Workers
+            </Link>
+            <Link
               href="/history"
               className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
             >
@@ -239,7 +245,13 @@ export function DashboardClient({ initialJobs, todayLabel }: DashboardClientProp
         </div>
       </main>
       {editingJob ? (
-        <JobEditModal job={editingJob} isSaving={savingEdit} onClose={() => !savingEdit && setEditingJob(null)} onSave={handleSaveEdit} />
+        <JobEditModal
+          key={editingJob.id}
+          job={editingJob}
+          isSaving={savingEdit}
+          onClose={() => !savingEdit && setEditingJob(null)}
+          onSave={handleSaveEdit}
+        />
       ) : null}
       {deletingJobId ? (
         <DeleteJobModal isDeleting={isDeleting} onCancel={() => !isDeleting && setDeletingJobId(null)} onConfirm={handleDeleteConfirm} />

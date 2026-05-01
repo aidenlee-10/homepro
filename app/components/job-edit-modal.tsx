@@ -1,7 +1,10 @@
 'use client'
 
-import { FormEvent, useMemo, useState } from 'react'
-import { Job } from '@/lib/supabase'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import type { Job, Worker } from '@/lib/supabase'
+
+const supabase = createClient()
 
 const monthOptions = [
   { value: '01', label: 'January' },
@@ -71,6 +74,7 @@ export type EditJobPayload = {
   time: string
   service_type: string
   price: number
+  assigned_to: string | null
 }
 
 type JobEditModalProps = {
@@ -99,7 +103,23 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
   const [serviceType, setServiceType] = useState<(typeof serviceOptions)[number]>(isKnownService ? (job.service_type as (typeof serviceOptions)[number]) : 'Other')
   const [customService, setCustomService] = useState(isKnownService ? '' : job.service_type)
   const [price, setPrice] = useState(String(job.price))
+  const [workers, setWorkers] = useState<Worker[]>([])
+  const [assignedTo, setAssignedTo] = useState(job.assigned_to ?? '')
   const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadWorkers() {
+      const { data, error } = await supabase.from('workers').select('*').eq('company_id', job.company_id).order('name', { ascending: true })
+      if (cancelled) return
+      if (error) console.error('Error loading workers:', error.message)
+      setWorkers(data ?? [])
+    }
+    loadWorkers()
+    return () => {
+      cancelled = true
+    }
+  }, [job.company_id, job.id])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -132,6 +152,7 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
       time: `${String(twentyFourHour).padStart(2, '0')}:${minute}`,
       service_type: resolvedServiceType,
       price: numericPrice,
+      assigned_to: assignedTo || null,
     }).catch(error => {
       setErrorMessage(error instanceof Error ? error.message : 'Could not save job changes.')
     })
@@ -220,6 +241,22 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
                 <option value="PM">PM</option>
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-700">Assign to</label>
+            <select
+              value={assignedTo}
+              onChange={event => setAssignedTo(event.target.value)}
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Unassigned</option>
+              {workers.map(w => (
+                <option key={w.id} value={w.id}>
+                  {w.name ?? w.email ?? w.id}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

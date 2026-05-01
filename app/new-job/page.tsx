@@ -3,7 +3,7 @@
 import { FormEvent, Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import type { Customer } from '@/lib/supabase'
+import type { Customer, Worker } from '@/lib/supabase'
 
 const supabase = createClient()
 
@@ -74,6 +74,7 @@ function NewJobForm() {
   const prefilledDate = searchParams.get('date')
   const [prefilledYear = '', prefilledMonth = '', prefilledDay = ''] = prefilledDate?.split('-') ?? []
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [workers, setWorkers] = useState<Worker[]>([])
   const [customersLoaded, setCustomersLoaded] = useState(false)
   const [customerChoice, setCustomerChoice] = useState('')
   const [newCustomerName, setNewCustomerName] = useState('')
@@ -88,26 +89,32 @@ function NewJobForm() {
   const [customService, setCustomService] = useState('')
   const [price, setPrice] = useState('')
   const [status] = useState<'scheduled'>('scheduled')
+  const [assignedTo, setAssignedTo] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
     let cancelled = false
-    async function loadCustomers() {
+    async function loadCustomersAndWorkers() {
       const {
         data: { user },
       } = await supabase.auth.getUser()
       if (!user || cancelled) return
       const { data: company } = await supabase.from('companies').select('id').eq('owner_id', user.id).maybeSingle()
       if (!company || cancelled) return
-      const { data, error } = await supabase.from('customers').select('*').eq('company_id', company.id).order('name', { ascending: true })
+      const [customersRes, workersRes] = await Promise.all([
+        supabase.from('customers').select('*').eq('company_id', company.id).order('name', { ascending: true }),
+        supabase.from('workers').select('*').eq('company_id', company.id).order('name', { ascending: true }),
+      ])
       if (!cancelled) {
-        if (error) console.error('Error loading customers:', error.message)
-        setCustomers(data ?? [])
+        if (customersRes.error) console.error('Error loading customers:', customersRes.error.message)
+        if (workersRes.error) console.error('Error loading workers:', workersRes.error.message)
+        setCustomers(customersRes.data ?? [])
+        setWorkers(workersRes.data ?? [])
         setCustomersLoaded(true)
       }
     }
-    loadCustomers()
+    loadCustomersAndWorkers()
     return () => {
       cancelled = true
     }
@@ -246,6 +253,7 @@ function NewJobForm() {
       service_type: resolvedServiceType,
       price: numericPrice,
       status,
+      assigned_to: assignedTo || null,
     })
 
     if (error) {
@@ -317,6 +325,26 @@ function NewJobForm() {
               />
             </div>
           ) : null}
+
+          <div>
+            <label htmlFor="assignedTo" className="text-sm font-medium text-slate-700">
+              Assign to
+            </label>
+            <select
+              id="assignedTo"
+              value={assignedTo}
+              onChange={e => setAssignedTo(e.target.value)}
+              disabled={!customersLoaded}
+              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
+            >
+              <option value="">Unassigned</option>
+              {workers.map(w => (
+                <option key={w.id} value={w.id}>
+                  {w.name ?? w.email ?? w.id}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div>
             <label htmlFor="address" className="text-sm font-medium text-slate-700">

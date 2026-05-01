@@ -12,6 +12,7 @@ export type Job = {
   service_type: string
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
   price: number
+  assigned_to?: string | null
   created_at: string
 }
 
@@ -24,4 +25,23 @@ export type Customer = {
   address: string | null
   notes: string | null
   created_at: string
+}
+
+export type Worker = {
+  id: string
+  company_id: string
+  user_id: string
+  name: string | null
+  email: string | null
+  role: string
+  created_at?: string
+}
+
+export type Invite = {
+  id: string
+  company_id: string
+  email: string
+  token: string
+  used: boolean
+  created_at?: string
 }
