@@ -3,7 +3,7 @@
 import { FormEvent, Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import type { Customer, Worker } from '@/lib/supabase'
+import type { Customer, Service, Worker } from '@/lib/supabase'
 
 const supabase = createClient()
 
@@ -43,44 +43,6 @@ const dayOptions = Array.from({ length: 31 }, (_, index) => {
 const hourOptions = Array.from({ length: 12 }, (_, index) => String(index + 1))
 const minuteOptions = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
 
-const serviceOptions = [
-  'Window Cleaning',
-  'Gutter Cleaning',
-  'Pressure Washing',
-  'Solar Panel Cleaning',
-  'Roof Cleaning',
-  'Driveway Cleaning',
-  'Patio Cleaning',
-  'Pool Cleaning',
-  'Lawn Mowing',
-  'Hedge Trimming',
-  'Tree Trimming',
-  'Leaf Removal',
-  'Snow Removal',
-  'Irrigation System Check',
-  'Fence Repair',
-  'Deck Repair',
-  'Door Repair',
-  'Window Repair',
-  'Roof Repair',
-  'Gutter Repair',
-  'Fence Installation',
-  'Deck Installation',
-  'Garden Bed Installation',
-  'Outdoor Lighting Installation',
-  'Security Camera Installation',
-  'Pest Control',
-  'Home Inspection',
-  'Mold Inspection',
-  'Chimney Inspection',
-  'Junk Removal',
-  'Moving Help',
-  'Handyman Services',
-  'Paint Touch Up',
-  'Caulking & Sealing',
-  'Other',
-] as const
-
 function NewJobForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -88,9 +50,11 @@ function NewJobForm() {
   const [prefilledYear = '', prefilledMonth = '', prefilledDay = ''] = prefilledDate?.split('-') ?? []
   const [customers, setCustomers] = useState<Customer[]>([])
   const [workers, setWorkers] = useState<Worker[]>([])
+  const [services, setServices] = useState<Service[]>([])
   const [companyId, setCompanyId] = useState<string | null>(null)
   const [customersLoaded, setCustomersLoaded] = useState(false)
   const [workersLoaded, setWorkersLoaded] = useState(false)
+  const [servicesLoaded, setServicesLoaded] = useState(false)
   const [customerChoice, setCustomerChoice] = useState('')
   const [newCustomerName, setNewCustomerName] = useState('')
   const [address, setAddress] = useState('')
@@ -100,7 +64,7 @@ function NewJobForm() {
   const [hour, setHour] = useState('')
   const [minute, setMinute] = useState('')
   const [meridiem, setMeridiem] = useState<'AM' | 'PM'>('AM')
-  const [serviceType, setServiceType] = useState<(typeof serviceOptions)[number]>('Window Cleaning')
+  const [serviceType, setServiceType] = useState('')
   const [customService, setCustomService] = useState('')
   const [price, setPrice] = useState('')
   const [status] = useState<'scheduled'>('scheduled')
@@ -116,23 +80,28 @@ function NewJobForm() {
         if (!cancelled) {
           setCustomersLoaded(true)
           setWorkersLoaded(true)
+          setServicesLoaded(true)
         }
         return
       }
 
       if (!cancelled) setCompanyId(resolvedCompanyId)
 
-      const [customersRes, workersRes] = await Promise.all([
+      const [customersRes, workersRes, servicesRes] = await Promise.all([
         supabase.from('customers').select('*').eq('company_id', resolvedCompanyId).order('name', { ascending: true }),
         supabase.from('workers').select('*').eq('company_id', resolvedCompanyId).order('name', { ascending: true }),
+        supabase.from('services').select('*').eq('company_id', resolvedCompanyId).order('name', { ascending: true }),
       ])
       if (!cancelled) {
         if (customersRes.error) console.error('Error loading customers:', customersRes.error.message)
         if (workersRes.error) console.error('Error loading workers:', workersRes.error.message)
+        if (servicesRes.error) console.error('Error loading services:', servicesRes.error.message)
         setCustomers(customersRes.data ?? [])
         setWorkers(workersRes.data ?? [])
+        setServices((servicesRes.data ?? []) as Service[])
         setCustomersLoaded(true)
         setWorkersLoaded(true)
+        setServicesLoaded(true)
       }
     }
     loadCustomersAndWorkers()
@@ -179,7 +148,13 @@ function NewJobForm() {
       return
     }
 
-    const resolvedServiceType = serviceType === 'Other' ? customService.trim() : serviceType
+    if (!serviceType) {
+      setErrorMessage('Please select a service type.')
+      setIsSaving(false)
+      return
+    }
+
+    const resolvedServiceType = serviceType === '__other__' ? customService.trim() : serviceType
     if (!resolvedServiceType) {
       setErrorMessage('Please enter a custom service type.')
       setIsSaving(false)
@@ -458,17 +433,25 @@ function NewJobForm() {
                 id="serviceType"
                 value={serviceType}
                 onChange={e => {
-                  const nextValue = e.target.value as (typeof serviceOptions)[number]
+                  const nextValue = e.target.value
                   setServiceType(nextValue)
-                  if (nextValue !== 'Other') setCustomService('')
+                  if (nextValue === '__other__') return
+                  setCustomService('')
+                  const selectedService = services.find(service => service.name === nextValue)
+                  if (selectedService) {
+                    setPrice(String(selectedService.default_price))
+                  }
                 }}
+                disabled={!servicesLoaded}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {serviceOptions.map(option => (
-                  <option key={option} value={option}>
-                    {option}
+                <option value="">{servicesLoaded ? 'Select service…' : 'Loading services…'}</option>
+                {services.map(service => (
+                  <option key={service.id} value={service.name}>
+                    {service.name}
                   </option>
                 ))}
+                <option value="__other__">Other</option>
               </select>
             </div>
             <div>
@@ -490,7 +473,7 @@ function NewJobForm() {
             </div>
           </div>
 
-          {serviceType === 'Other' && (
+          {serviceType === '__other__' && (
             <div>
               <label htmlFor="customService" className="text-sm font-medium text-slate-700">
                 Custom service

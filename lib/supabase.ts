@@ -45,3 +45,11 @@ export type Invite = {
   used: boolean
   created_at?: string
 }
+
+export type Service = {
+  id: string
+  company_id: string
+  name: string
+  default_price: number
+  created_at?: string
+}

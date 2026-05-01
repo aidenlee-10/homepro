@@ -132,6 +132,12 @@ export function DashboardClient({ initialJobs, todayLabel, isWorker }: Dashboard
                   Workers
                 </Link>
                 <Link
+                  href="/services"
+                  className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Services
+                </Link>
+                <Link
                   href="/history"
                   className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
                 >

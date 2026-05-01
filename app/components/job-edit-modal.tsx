@@ -1,8 +1,8 @@
 'use client'
 
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { Job, Worker } from '@/lib/supabase'
+import type { Job, Service, Worker } from '@/lib/supabase'
 
 const supabase = createClient()
 
@@ -29,44 +29,6 @@ const dayOptions = Array.from({ length: 31 }, (_, index) => {
 const hourOptions = Array.from({ length: 12 }, (_, index) => String(index + 1))
 const minuteOptions = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'))
 
-const serviceOptions = [
-  'Window Cleaning',
-  'Gutter Cleaning',
-  'Pressure Washing',
-  'Solar Panel Cleaning',
-  'Roof Cleaning',
-  'Driveway Cleaning',
-  'Patio Cleaning',
-  'Pool Cleaning',
-  'Lawn Mowing',
-  'Hedge Trimming',
-  'Tree Trimming',
-  'Leaf Removal',
-  'Snow Removal',
-  'Irrigation System Check',
-  'Fence Repair',
-  'Deck Repair',
-  'Door Repair',
-  'Window Repair',
-  'Roof Repair',
-  'Gutter Repair',
-  'Fence Installation',
-  'Deck Installation',
-  'Garden Bed Installation',
-  'Outdoor Lighting Installation',
-  'Security Camera Installation',
-  'Pest Control',
-  'Home Inspection',
-  'Mold Inspection',
-  'Chimney Inspection',
-  'Junk Removal',
-  'Moving Help',
-  'Handyman Services',
-  'Paint Touch Up',
-  'Caulking & Sealing',
-  'Other',
-] as const
-
 export type EditJobPayload = {
   customer_name: string
   address: string
@@ -90,7 +52,6 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
   const hour24Number = Number(hour24)
   const initialMeridiem: 'AM' | 'PM' = hour24Number >= 12 ? 'PM' : 'AM'
   const initialHour12 = String((hour24Number % 12) || 12)
-  const isKnownService = useMemo(() => serviceOptions.includes(job.service_type as (typeof serviceOptions)[number]), [job.service_type])
 
   const [customerName, setCustomerName] = useState(job.customer_name)
   const [address, setAddress] = useState(job.address)
@@ -100,8 +61,10 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
   const [hourValue, setHourValue] = useState(initialHour12)
   const [minute, setMinute] = useState(minuteValue)
   const [meridiem, setMeridiem] = useState<'AM' | 'PM'>(initialMeridiem)
-  const [serviceType, setServiceType] = useState<(typeof serviceOptions)[number]>(isKnownService ? (job.service_type as (typeof serviceOptions)[number]) : 'Other')
-  const [customService, setCustomService] = useState(isKnownService ? '' : job.service_type)
+  const [services, setServices] = useState<Service[]>([])
+  const [servicesLoaded, setServicesLoaded] = useState(false)
+  const [serviceType, setServiceType] = useState('')
+  const [customService, setCustomService] = useState('')
   const [price, setPrice] = useState(String(job.price))
   const [workers, setWorkers] = useState<Worker[]>([])
   const [workersLoaded, setWorkersLoaded] = useState(false)
@@ -127,6 +90,37 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
     }
   }, [job.company_id, job.id])
 
+  useEffect(() => {
+    let cancelled = false
+    async function loadServices() {
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .eq('company_id', job.company_id)
+        .order('name', { ascending: true })
+
+      if (cancelled) return
+      if (error) console.error('Error loading services:', error.message)
+
+      const nextServices = (data ?? []) as Service[]
+      setServices(nextServices)
+      setServicesLoaded(true)
+
+      const matchingService = nextServices.find(service => service.name === job.service_type)
+      if (matchingService) {
+        setServiceType(matchingService.name)
+        setCustomService('')
+      } else {
+        setServiceType('__other__')
+        setCustomService(job.service_type)
+      }
+    }
+    loadServices()
+    return () => {
+      cancelled = true
+    }
+  }, [job.company_id, job.id, job.service_type])
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setErrorMessage('')
@@ -142,7 +136,12 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
       return
     }
 
-    const resolvedServiceType = serviceType === 'Other' ? customService.trim() : serviceType
+    if (!serviceType) {
+      setErrorMessage('Please select a service type.')
+      return
+    }
+
+    const resolvedServiceType = serviceType === '__other__' ? customService.trim() : serviceType
     if (!resolvedServiceType) {
       setErrorMessage('Please enter a custom service type.')
       return
@@ -272,17 +271,25 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
               <select
                 value={serviceType}
                 onChange={event => {
-                  const nextValue = event.target.value as (typeof serviceOptions)[number]
+                  const nextValue = event.target.value
                   setServiceType(nextValue)
-                  if (nextValue !== 'Other') setCustomService('')
+                  if (nextValue === '__other__') return
+                  setCustomService('')
+                  const selectedService = services.find(service => service.name === nextValue)
+                  if (selectedService) {
+                    setPrice(String(selectedService.default_price))
+                  }
                 }}
+                disabled={!servicesLoaded}
                 className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {serviceOptions.map(option => (
-                  <option key={option} value={option}>
-                    {option}
+                <option value="">{servicesLoaded ? 'Select service…' : 'Loading services…'}</option>
+                {services.map(service => (
+                  <option key={service.id} value={service.name}>
+                    {service.name}
                   </option>
                 ))}
+                <option value="__other__">Other</option>
               </select>
             </div>
             <div>
@@ -300,7 +307,7 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
             </div>
           </div>
 
-          {serviceType === 'Other' ? (
+          {serviceType === '__other__' ? (
             <div>
               <label className="text-sm font-medium text-slate-700">Custom service</label>
               <input
