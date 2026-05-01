@@ -1,42 +1,39 @@
 import { createClient } from '@/lib/supabase/server'
 import { Job } from '@/lib/supabase'
 import { DashboardClient } from './dashboard-client'
+import { getSessionMembership } from '@/lib/company-server'
 
 const NEW_YORK_TIME_ZONE = 'America/New_York'
 
-async function getTodaysJobs(): Promise<Job[]> {
+async function getTodaysJobs() {
   const supabase = await createClient()
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser()
-  if (userError || !user) {
-    if (userError) console.error('Error fetching user:', userError.message)
-    return []
-  }
-
-  const { data: company, error: companyError } = await supabase.from('companies').select('id').eq('owner_id', user.id).maybeSingle()
-  if (companyError || !company) {
-    if (companyError) console.error('Error fetching company:', companyError.message)
-    return []
+  const membership = await getSessionMembership()
+  if (!membership?.companyId) {
+    return { jobs: [] as Job[], isWorker: false }
   }
 
   const today = new Date().toLocaleDateString('en-CA', { timeZone: NEW_YORK_TIME_ZONE })
-  const { data, error } = await supabase
+  let jobsQuery = supabase
     .from('jobs')
     .select('*')
-    .eq('company_id', company.id)
+    .eq('company_id', membership.companyId)
     .eq('date', today)
     .order('time', { ascending: true })
+
+  if (membership.isWorker && membership.workerId) {
+    jobsQuery = jobsQuery.eq('assigned_to', membership.workerId)
+  }
+
+  const { data, error } = await jobsQuery
   if (error) {
     console.error('Error fetching jobs:', error.message)
-    return []
+    return { jobs: [] as Job[], isWorker: membership.isWorker }
   }
-  return data as Job[]
+  return { jobs: data as Job[], isWorker: membership.isWorker }
 }
 
 export default async function DashboardPage() {
-  const jobs = await getTodaysJobs()
+  const { jobs, isWorker } = await getTodaysJobs()
   const todayLabel = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
@@ -44,5 +41,5 @@ export default async function DashboardPage() {
     timeZone: NEW_YORK_TIME_ZONE,
   })
 
-  return <DashboardClient initialJobs={jobs} todayLabel={todayLabel} />
+  return <DashboardClient initialJobs={jobs} todayLabel={todayLabel} isWorker={isWorker} />
 }

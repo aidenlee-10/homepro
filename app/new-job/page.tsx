@@ -7,6 +7,19 @@ import type { Customer, Worker } from '@/lib/supabase'
 
 const supabase = createClient()
 
+async function resolveCompanyIdForSession() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: ownerCompany } = await supabase.from('companies').select('id').eq('owner_id', user.id).maybeSingle()
+  if (ownerCompany?.id) return ownerCompany.id
+
+  const { data: worker } = await supabase.from('workers').select('company_id').eq('user_id', user.id).maybeSingle()
+  return worker?.company_id ?? null
+}
+
 const monthOptions = [
   { value: '01', label: 'January' },
   { value: '02', label: 'February' },
@@ -75,7 +88,9 @@ function NewJobForm() {
   const [prefilledYear = '', prefilledMonth = '', prefilledDay = ''] = prefilledDate?.split('-') ?? []
   const [customers, setCustomers] = useState<Customer[]>([])
   const [workers, setWorkers] = useState<Worker[]>([])
+  const [companyId, setCompanyId] = useState<string | null>(null)
   const [customersLoaded, setCustomersLoaded] = useState(false)
+  const [workersLoaded, setWorkersLoaded] = useState(false)
   const [customerChoice, setCustomerChoice] = useState('')
   const [newCustomerName, setNewCustomerName] = useState('')
   const [address, setAddress] = useState('')
@@ -96,15 +111,20 @@ function NewJobForm() {
   useEffect(() => {
     let cancelled = false
     async function loadCustomersAndWorkers() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user || cancelled) return
-      const { data: company } = await supabase.from('companies').select('id').eq('owner_id', user.id).maybeSingle()
-      if (!company || cancelled) return
+      const resolvedCompanyId = await resolveCompanyIdForSession()
+      if (!resolvedCompanyId || cancelled) {
+        if (!cancelled) {
+          setCustomersLoaded(true)
+          setWorkersLoaded(true)
+        }
+        return
+      }
+
+      if (!cancelled) setCompanyId(resolvedCompanyId)
+
       const [customersRes, workersRes] = await Promise.all([
-        supabase.from('customers').select('*').eq('company_id', company.id).order('name', { ascending: true }),
-        supabase.from('workers').select('*').eq('company_id', company.id).order('name', { ascending: true }),
+        supabase.from('customers').select('*').eq('company_id', resolvedCompanyId).order('name', { ascending: true }),
+        supabase.from('workers').select('*').eq('company_id', resolvedCompanyId).order('name', { ascending: true }),
       ])
       if (!cancelled) {
         if (customersRes.error) console.error('Error loading customers:', customersRes.error.message)
@@ -112,6 +132,7 @@ function NewJobForm() {
         setCustomers(customersRes.data ?? [])
         setWorkers(workersRes.data ?? [])
         setCustomersLoaded(true)
+        setWorkersLoaded(true)
       }
     }
     loadCustomersAndWorkers()
@@ -185,24 +206,9 @@ function NewJobForm() {
     const normalizedDate = `${year.trim()}-${normalizedMonth}-${normalizedDay}`
     const normalizedTime = `${String(twentyFourHour).padStart(2, '0')}:${minute}`
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
-    if (userError || !user) {
-      setErrorMessage(userError?.message ?? 'You must be signed in to create a job.')
-      setIsSaving(false)
-      return
-    }
-
-    const { data: company, error: companyError } = await supabase
-      .from('companies')
-      .select('id')
-      .eq('owner_id', user.id)
-      .maybeSingle()
-
-    if (companyError || !company) {
-      setErrorMessage(companyError?.message ?? 'No company found for your account.')
+    const resolvedCompanyId = companyId ?? (await resolveCompanyIdForSession())
+    if (!resolvedCompanyId) {
+      setErrorMessage('No company found for your account.')
       setIsSaving(false)
       return
     }
@@ -215,7 +221,7 @@ function NewJobForm() {
       const { data: newCustomer, error: insertCustomerError } = await supabase
         .from('customers')
         .insert({
-          company_id: company.id,
+          company_id: resolvedCompanyId,
           name: resolvedCustomerName,
           phone: null,
           email: null,
@@ -244,7 +250,7 @@ function NewJobForm() {
     }
 
     const { error } = await supabase.from('jobs').insert({
-      company_id: company.id,
+      company_id: resolvedCompanyId,
       customer_id: customerId,
       customer_name: resolvedCustomerName,
       address: address.trim(),
@@ -334,10 +340,10 @@ function NewJobForm() {
               id="assignedTo"
               value={assignedTo}
               onChange={e => setAssignedTo(e.target.value)}
-              disabled={!customersLoaded}
+              disabled={!workersLoaded}
               className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60"
             >
-              <option value="">Unassigned</option>
+              <option value="">{workersLoaded ? 'Unassigned' : 'Loading workers…'}</option>
               {workers.map(w => (
                 <option key={w.id} value={w.id}>
                   {w.name ?? w.email ?? w.id}

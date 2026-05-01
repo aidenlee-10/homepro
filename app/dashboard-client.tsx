@@ -27,9 +27,10 @@ const serviceIcons: Record<string, string> = {
 type DashboardClientProps = {
   initialJobs: Job[]
   todayLabel: string
+  isWorker: boolean
 }
 
-export function DashboardClient({ initialJobs, todayLabel }: DashboardClientProps) {
+export function DashboardClient({ initialJobs, todayLabel, isWorker }: DashboardClientProps) {
   const router = useRouter()
   const [jobs, setJobs] = useState<Job[]>(initialJobs)
   const [busyId, setBusyId] = useState<string | null>(null)
@@ -116,30 +117,34 @@ export function DashboardClient({ initialJobs, todayLabel }: DashboardClientProp
             >
               Calendar
             </Link>
-            <Link
-              href="/customers"
-              className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              Customers
-            </Link>
-            <Link
-              href="/workers"
-              className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              Workers
-            </Link>
-            <Link
-              href="/history"
-              className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              History
-            </Link>
-            <Link
-              href="/new-job"
-              className="text-xs font-medium px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-            >
-              + Add Job
-            </Link>
+            {!isWorker ? (
+              <>
+                <Link
+                  href="/customers"
+                  className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Customers
+                </Link>
+                <Link
+                  href="/workers"
+                  className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Workers
+                </Link>
+                <Link
+                  href="/history"
+                  className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  History
+                </Link>
+                <Link
+                  href="/new-job"
+                  className="text-xs font-medium px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                >
+                  + Add Job
+                </Link>
+              </>
+            ) : null}
             <button
               type="button"
               onClick={signOut}

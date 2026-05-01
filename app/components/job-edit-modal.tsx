@@ -104,16 +104,22 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
   const [customService, setCustomService] = useState(isKnownService ? '' : job.service_type)
   const [price, setPrice] = useState(String(job.price))
   const [workers, setWorkers] = useState<Worker[]>([])
+  const [workersLoaded, setWorkersLoaded] = useState(false)
   const [assignedTo, setAssignedTo] = useState(job.assigned_to ?? '')
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
     let cancelled = false
     async function loadWorkers() {
-      const { data, error } = await supabase.from('workers').select('*').eq('company_id', job.company_id).order('name', { ascending: true })
+      const { data, error } = await supabase
+        .from('workers')
+        .select('id, company_id, user_id, name, email, role, created_at')
+        .eq('company_id', job.company_id)
+        .order('name', { ascending: true })
       if (cancelled) return
       if (error) console.error('Error loading workers:', error.message)
       setWorkers(data ?? [])
+      setWorkersLoaded(true)
     }
     loadWorkers()
     return () => {
@@ -248,9 +254,10 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
             <select
               value={assignedTo}
               onChange={event => setAssignedTo(event.target.value)}
+              disabled={!workersLoaded}
               className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Unassigned</option>
+              <option value="">{workersLoaded ? 'Unassigned' : 'Loading workers…'}</option>
               {workers.map(w => (
                 <option key={w.id} value={w.id}>
                   {w.name ?? w.email ?? w.id}

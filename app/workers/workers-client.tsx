@@ -78,7 +78,7 @@ export function WorkersClient({ initialWorkers, companyId, isOwner }: WorkersCli
               href="/"
               className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
             >
-              Dashboard
+              Back
             </Link>
             {isOwner ? (
               <button
