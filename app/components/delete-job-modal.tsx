@@ -8,17 +8,17 @@ type DeleteJobModalProps = {
 
 export function DeleteJobModal({ isDeleting, onCancel, onConfirm }: DeleteJobModalProps) {
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl border border-slate-100 p-5 shadow-xl">
-        <h2 className="text-lg font-semibold text-slate-900">Delete Job</h2>
-        <p className="text-sm text-slate-500 mt-2">Are you sure you want to delete this job?</p>
+    <div className="hp-animate-modal-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-[2px]">
+      <div className="hp-animate-modal-panel w-full max-w-md rounded-2xl border border-slate-100 bg-white p-6 shadow-lg">
+        <h2 className="text-lg font-semibold text-slate-900">Delete job</h2>
+        <p className="mt-2 text-sm font-medium text-slate-400">Are you sure you want to delete this job? This cannot be undone.</p>
 
-        <div className="mt-5 flex items-center justify-end gap-2">
+        <div className="mt-6 flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
             disabled={isDeleting}
-            className="text-sm font-medium px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+            className="hp-btn-secondary text-sm font-medium px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm disabled:opacity-50 disabled:pointer-events-none"
           >
             Cancel
           </button>
@@ -26,7 +26,7 @@ export function DeleteJobModal({ isDeleting, onCancel, onConfirm }: DeleteJobMod
             type="button"
             onClick={onConfirm}
             disabled={isDeleting}
-            className="text-sm font-medium px-4 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+            className="hp-btn-danger rounded-xl px-4 py-2 text-sm"
           >
             {isDeleting ? 'Deleting…' : 'Delete'}
           </button>

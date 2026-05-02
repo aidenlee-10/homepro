@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getCompanyIdForSession } from '@/lib/company-server'
+import { getCompanyIdForSession, getSessionMembership } from '@/lib/company-server'
 import type { Customer, Job } from '@/lib/supabase'
 import { CustomerDetailClient } from './customer-detail-client'
 
@@ -11,6 +11,7 @@ type PageProps = {
 export default async function CustomerDetailPage({ params }: PageProps) {
   const { id } = await params
   const companyId = await getCompanyIdForSession()
+  const membership = await getSessionMembership()
   if (!companyId) notFound()
 
   const supabase = await createClient()
@@ -35,5 +36,11 @@ export default async function CustomerDetailPage({ params }: PageProps) {
     console.error('Error fetching customer jobs:', jobsError.message)
   }
 
-  return <CustomerDetailClient customer={customer as Customer} jobs={(jobs ?? []) as Job[]} />
+  return (
+    <CustomerDetailClient
+      customer={customer as Customer}
+      jobs={(jobs ?? []) as Job[]}
+      isWorker={Boolean(membership?.isWorker)}
+    />
+  )
 }

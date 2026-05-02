@@ -5,19 +5,25 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Customer, Job } from '@/lib/supabase'
+import { ServiceTypeIcon } from '@/app/components/service-type-icon'
+import { SidebarLayout } from '@/app/components/sidebar-layout'
 
 const supabase = createClient()
 
 const statusConfig = {
-  scheduled: { label: 'Scheduled', bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' },
-  in_progress: { label: 'In Progress', bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400' },
-  completed: { label: 'Completed', bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-  cancelled: { label: 'Cancelled', bg: 'bg-red-50', text: 'text-red-600', dot: 'bg-red-400' },
+  scheduled: { label: 'Scheduled', bg: 'bg-blue-50', text: 'text-[#2563eb]', dot: 'bg-[#2563eb]' },
+  in_progress: { label: 'In progress', bg: 'bg-amber-50', text: 'text-[#d97706]', dot: 'bg-[#d97706]' },
+  completed: { label: 'Completed', bg: 'bg-emerald-50', text: 'text-[#059669]', dot: 'bg-[#059669]' },
+  cancelled: { label: 'Cancelled', bg: 'bg-red-50', text: 'text-[#dc2626]', dot: 'bg-[#dc2626]' },
 }
+
+const field =
+  'mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 transition-[border-color,box-shadow] duration-200 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/35 focus:border-[#2563eb] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.12)]'
 
 type Props = {
   customer: Customer
   jobs: Job[]
+  isWorker: boolean
 }
 
 function formatJobDate(date: string) {
@@ -31,7 +37,14 @@ function formatJobDate(date: string) {
   }).format(new Date(Date.UTC(y, m - 1, d, 12)))
 }
 
-export function CustomerDetailClient({ customer, jobs }: Props) {
+function jobLeftBorderClass(status: Job['status']) {
+  if (status === 'scheduled') return 'border-l-[#2563eb]'
+  if (status === 'in_progress') return 'border-l-[#d97706]'
+  if (status === 'completed') return 'border-l-[#059669]'
+  return 'border-l-[#dc2626]'
+}
+
+export function CustomerDetailClient({ customer, jobs, isWorker }: Props) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -80,70 +93,75 @@ export function CustomerDetailClient({ customer, jobs }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-10">
-        <div className="max-w-lg mx-auto flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">{customer.name}</h1>
-            <p className="text-sm text-slate-400">Customer profile</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={openEdit}
-              className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              Edit
-            </button>
-            <Link href="/customers" className="text-xs font-medium text-blue-600 hover:text-blue-700">
-              All customers
-            </Link>
-          </div>
+    <SidebarLayout
+      title={customer.name}
+      subtitle="Customer profile"
+      isWorker={isWorker}
+      headerActions={
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={openEdit}
+            className="hp-btn-secondary text-sm font-medium px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm"
+          >
+            Edit
+          </button>
+          <Link href="/customers" className="hp-btn-primary inline-flex rounded-xl px-4 py-2 text-sm">
+            All customers
+          </Link>
         </div>
-      </header>
-
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-5">
-        <section className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
+      }
+    >
+      <div className="space-y-6">
+        <section className="hp-card space-y-4 rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
           <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wide">Phone</p>
-            <p className="text-slate-900 font-medium">{customer.phone ?? '—'}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Phone</p>
+            <p className="mt-1 font-medium text-slate-900">{customer.phone ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wide">Email</p>
-            <p className="text-slate-900 font-medium">{customer.email ?? '—'}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Email</p>
+            <p className="mt-1 font-medium text-slate-900">{customer.email ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wide">Address</p>
-            <p className="text-slate-900">{customer.address ?? '—'}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Address</p>
+            <p className="mt-1 text-sm font-medium text-slate-600">{customer.address ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-slate-400 uppercase tracking-wide">Notes</p>
-            <p className="text-slate-700 whitespace-pre-wrap">{customer.notes ?? '—'}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Notes</p>
+            <p className="mt-1 text-sm font-medium text-slate-600 whitespace-pre-wrap">{customer.notes ?? '—'}</p>
           </div>
         </section>
 
         <section>
-          <h2 className="text-sm font-semibold text-slate-900 mb-3">Past jobs</h2>
+          <h2 className="text-lg font-semibold tracking-tight text-slate-900 mb-4">Past jobs</h2>
           {jobs.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center text-slate-400">
-              <p className="font-medium">No jobs linked to this customer yet</p>
+            <div className="hp-card rounded-2xl border border-slate-100 bg-white p-10 text-center shadow-sm">
+              <p className="text-sm font-semibold text-slate-900">No jobs linked yet</p>
+              <p className="mt-1 text-sm font-medium text-slate-400">Jobs assigned to this customer appear here.</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {jobs.map(job => {
+            <div className="space-y-4">
+              {jobs.map((job, index) => {
                 const s = statusConfig[job.status]
                 return (
-                  <div key={job.id} className="bg-white rounded-2xl border border-slate-100 p-4">
+                  <div
+                    key={job.id}
+                    style={{ animationDelay: `${Math.min(index, 12) * 55}ms` }}
+                    className={`hp-stagger-fade-up hp-card rounded-2xl border border-slate-100 border-l-[6px] bg-white p-5 shadow-sm ${jobLeftBorderClass(job.status)}`}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold text-slate-900">{formatJobDate(job.date)}</p>
-                        <p className="text-sm text-slate-500 mt-1">{job.service_type}</p>
+                        <p className="mt-1 flex items-center gap-2 text-sm font-medium text-slate-500">
+                          <ServiceTypeIcon serviceType={job.service_type} className="h-4 w-4 shrink-0 text-slate-400" />
+                          {job.service_type}
+                        </p>
                       </div>
-                      <p className="text-sm font-bold text-blue-600 shrink-0">${job.price}</p>
+                      <p className="text-sm font-semibold tabular-nums text-[#2563eb] shrink-0">${job.price}</p>
                     </div>
-                    <div className="mt-3 pt-3 border-t border-slate-50">
-                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${s.bg} ${s.text}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+                    <div className="mt-4 border-t border-slate-100 pt-4">
+                      <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${s.bg} ${s.text}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
                         {s.label}
                       </span>
                     </div>
@@ -153,85 +171,59 @@ export function CustomerDetailClient({ customer, jobs }: Props) {
             </div>
           )}
         </section>
-      </main>
+      </div>
 
       {isEditing ? (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center px-4">
-          <div className="w-full max-w-lg bg-white rounded-2xl border border-slate-100 p-5 shadow-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-900">Edit customer</h2>
-              <button type="button" onClick={() => !isSaving && setIsEditing(false)} className="text-sm text-slate-500 hover:text-slate-700">
+        <div className="hp-animate-modal-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-[2px]">
+          <div className="hp-animate-modal-panel max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-100 bg-white p-6 shadow-lg">
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900">Edit customer</h2>
+              <button
+                type="button"
+                onClick={() => !isSaving && setIsEditing(false)}
+                className="text-sm font-medium text-slate-400 transition-colors duration-200 hover:text-slate-600"
+              >
                 Close
               </button>
             </div>
-            <form onSubmit={handleSaveEdit} className="space-y-4">
+            <form onSubmit={handleSaveEdit} className="space-y-5">
               <div>
-                <label className="text-sm font-medium text-slate-700">Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  required
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <label className="text-sm font-medium text-slate-400">Name</label>
+                <input type="text" value={name} onChange={e => setName(e.target.value)} required className={field} />
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-700">Phone</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <label className="text-sm font-medium text-slate-400">Phone</label>
+                <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} className={field} />
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-700">Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <label className="text-sm font-medium text-slate-400">Email</label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={field} />
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-700">Address</label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={e => setAddress(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <label className="text-sm font-medium text-slate-400">Address</label>
+                <input type="text" value={address} onChange={e => setAddress(e.target.value)} className={field} />
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-700">Notes</label>
-                <textarea
-                  rows={4}
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-                />
+                <label className="text-sm font-medium text-slate-400">Notes</label>
+                <textarea rows={4} value={notes} onChange={e => setNotes(e.target.value)} className={`${field} resize-y`} />
               </div>
-              {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
-              <div className="pt-1 flex justify-end gap-2">
+              {errorMessage ? <p className="text-sm font-medium text-[#dc2626]">{errorMessage}</p> : null}
+              <div className="flex justify-end gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => !isSaving && setIsEditing(false)}
-                  className="text-sm font-medium px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+                  className="hp-btn-secondary text-sm font-medium px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm"
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="text-sm font-medium px-4 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-                >
-                  {isSaving ? 'Saving…' : 'Save'}
+                <button type="submit" disabled={isSaving} className="hp-btn-primary rounded-xl px-4 py-2 text-sm">
+                  {isSaving ? 'Saving…' : 'Save changes'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       ) : null}
-    </div>
+    </SidebarLayout>
   )
 }

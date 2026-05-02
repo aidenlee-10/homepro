@@ -1,7 +1,10 @@
 import Link from 'next/link'
+import { Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { getCompanyIdForSession } from '@/lib/company-server'
+import { getCompanyIdForSession, getSessionMembership } from '@/lib/company-server'
 import type { Customer } from '@/lib/supabase'
+import { AddressLine } from '@/app/components/address-line'
+import { SidebarLayout } from '@/app/components/sidebar-layout'
 
 type CustomerStats = {
   customer: Customer
@@ -9,21 +12,24 @@ type CustomerStats = {
   lifetimeValue: number
 }
 
+function NoCompanyNotice({ title }: { title: string }) {
+  return (
+    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
+        <p className="text-lg font-semibold tracking-tight text-slate-900">{title}</p>
+        <p className="mt-2 text-sm font-medium text-slate-400">No company found for your account.</p>
+      </div>
+    </div>
+  )
+}
+
 export default async function CustomersPage() {
   const companyId = await getCompanyIdForSession()
+  const membership = await getSessionMembership()
   const supabase = await createClient()
 
   if (!companyId) {
-    return (
-      <div className="min-h-screen bg-slate-50">
-        <header className="bg-white border-b border-slate-200 px-4 py-4">
-          <div className="max-w-lg mx-auto">
-            <h1 className="text-xl font-bold text-slate-900">Customers</h1>
-            <p className="text-sm text-slate-500 mt-1">No company found for your account.</p>
-          </div>
-        </header>
-      </div>
-    )
+    return <NoCompanyNotice title="Customers" />
   }
 
   const { data: customers, error: customersError } = await supabase
@@ -61,36 +67,26 @@ export default async function CustomersPage() {
   })
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-10">
-        <div className="max-w-lg mx-auto flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Customers</h1>
-            <p className="text-sm text-slate-400">Your company directory</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/"
-              className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              Dashboard
-            </Link>
+    <SidebarLayout
+      title="Customers"
+      subtitle="Your company directory"
+      isWorker={membership?.isWorker}
+      headerActions={
+        <Link href="/customers/new" className="hp-btn-primary inline-flex rounded-xl px-4 py-2 text-sm">
+          + Add customer
+        </Link>
+      }
+    >
+      <div className="space-y-4">
+        {rows.length === 0 ? (
+          <div className="hp-card rounded-2xl border border-slate-100 bg-white p-10 text-center shadow-sm">
+            <Users className="mx-auto mb-3 h-14 w-14 text-slate-200" strokeWidth={1.25} aria-hidden />
+            <p className="text-sm font-semibold text-slate-900">No customers yet</p>
+            <p className="mt-1 text-sm font-medium text-slate-400">Add people you serve to keep records in one place.</p>
             <Link
               href="/customers/new"
-              className="text-xs font-medium px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              className="mt-5 inline-flex text-sm font-medium text-[#2563eb] transition-colors duration-200 hover:text-blue-800"
             >
-              + Add Customer
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-3">
-        {rows.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center text-slate-400">
-            <p className="text-4xl mb-2">👥</p>
-            <p className="font-medium">No customers yet</p>
-            <Link href="/customers/new" className="mt-3 inline-block text-sm text-blue-600 font-medium hover:text-blue-700">
               Add your first customer →
             </Link>
           </div>
@@ -99,22 +95,22 @@ export default async function CustomersPage() {
             <Link
               key={customer.id}
               href={`/customers/${customer.id}`}
-              className="block bg-white rounded-2xl border border-slate-100 p-4 hover:border-slate-200 transition-colors"
+              className="hp-card block rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"
             >
               <p className="font-semibold text-slate-900">{customer.name}</p>
-              <p className="text-sm text-slate-500 mt-1">{customer.phone ?? '—'}</p>
-              <p className="text-sm text-slate-500">{customer.email ?? '—'}</p>
-              <p className="text-xs text-slate-400 mt-2">📍 {customer.address ?? '—'}</p>
-              <div className="mt-3 pt-3 border-t border-slate-50 flex items-center justify-between text-sm">
-                <span className="text-slate-600">
-                  <span className="font-semibold text-slate-900">{jobCount}</span> jobs
+              <p className="text-sm font-medium text-slate-400 mt-1">{customer.phone ?? '—'}</p>
+              <p className="text-sm font-medium text-slate-400">{customer.email ?? '—'}</p>
+              <AddressLine className="mt-2">{customer.address ?? '—'}</AddressLine>
+              <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-4 text-sm">
+                <span className="font-medium text-slate-400">
+                  <span className="font-semibold tabular-nums text-slate-900">{jobCount}</span> jobs
                 </span>
-                <span className="font-bold text-emerald-600">${lifetimeValue}</span>
+                <span className="font-semibold tabular-nums text-[#059669]">${lifetimeValue}</span>
               </div>
             </Link>
           ))
         )}
-      </main>
-    </div>
+      </div>
+    </SidebarLayout>
   )
 }

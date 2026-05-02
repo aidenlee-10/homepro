@@ -2,25 +2,23 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Job } from '@/lib/supabase'
 import { createClient } from '@/lib/supabase/client'
+import { AddressLine } from '@/app/components/address-line'
 import { EditJobPayload, JobEditModal } from '@/app/components/job-edit-modal'
+import { CancelJobModal } from '@/app/components/cancel-job-modal'
 import { DeleteJobModal } from '@/app/components/delete-job-modal'
+import { ServiceTypeIcon } from '@/app/components/service-type-icon'
+import { SidebarLayout } from '@/app/components/sidebar-layout'
 
 const supabase = createClient()
 
 const statusConfig = {
-  scheduled: { label: 'Scheduled', bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' },
-  in_progress: { label: 'In Progress', bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400' },
-  completed: { label: 'Completed', bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-  cancelled: { label: 'Cancelled', bg: 'bg-red-50', text: 'text-red-600', dot: 'bg-red-400' },
-}
-
-const serviceIcons: Record<string, string> = {
-  'Window Cleaning': '🪟',
-  'Gutter Cleaning': '🏠',
-  'Pressure Washing': '💧',
-  'Solar Panel Cleaning': '☀️',
+  scheduled: { label: 'Scheduled', bg: 'bg-blue-50', text: 'text-[#2563eb]', dot: 'bg-[#2563eb]' },
+  in_progress: { label: 'In progress', bg: 'bg-amber-50', text: 'text-[#d97706]', dot: 'bg-[#d97706]' },
+  completed: { label: 'Completed', bg: 'bg-emerald-50', text: 'text-[#059669]', dot: 'bg-[#059669]' },
+  cancelled: { label: 'Cancelled', bg: 'bg-red-50', text: 'text-[#dc2626]', dot: 'bg-[#dc2626]' },
 }
 
 const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -28,6 +26,7 @@ const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 type CalendarClientProps = {
   initialJobs: Job[]
   initialDate: string
+  isWorker: boolean
 }
 
 function parseDateParts(date: string) {
@@ -65,7 +64,7 @@ function formatTimeLabel(time: string) {
   })
 }
 
-export function CalendarClient({ initialJobs, initialDate }: CalendarClientProps) {
+export function CalendarClient({ initialJobs, initialDate, isWorker }: CalendarClientProps) {
   const normalizedInitialDate = normalizeDateString(initialDate)
   const initialParts = parseDateParts(normalizedInitialDate)
   const [jobs, setJobs] = useState<Job[]>(initialJobs)
@@ -76,6 +75,8 @@ export function CalendarClient({ initialJobs, initialDate }: CalendarClientProps
   const [savingEdit, setSavingEdit] = useState(false)
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [cancellingJobId, setCancellingJobId] = useState<string | null>(null)
+  const [isCancellingJob, setIsCancellingJob] = useState(false)
 
   const jobsByDate = useMemo(() => {
     return jobs.reduce<Record<string, Job[]>>((acc, job) => {
@@ -138,6 +139,32 @@ export function CalendarClient({ initialJobs, initialDate }: CalendarClientProps
     setSelectedDate(`${viewYear}-${String(viewMonth + 2).padStart(2, '0')}-01`)
   }
 
+  async function handleConfirmCancelJob() {
+    if (!cancellingJobId) return
+    const targetId = cancellingJobId
+    const previous = jobs.find(j => j.id === targetId)
+    if (!previous) {
+      setCancellingJobId(null)
+      return
+    }
+
+    setIsCancellingJob(true)
+    setJobs(prev => prev.map(j => (j.id === targetId ? { ...j, status: 'cancelled' } : j)))
+    if (editingJob?.id === targetId) {
+      setEditingJob(null)
+    }
+
+    const { error } = await supabase.from('jobs').update({ status: 'cancelled' }).eq('id', targetId)
+
+    setIsCancellingJob(false)
+    setCancellingJobId(null)
+
+    if (error) {
+      console.error('Error cancelling job:', error.message)
+      setJobs(prev => prev.map(j => (j.id === targetId ? previous : j)))
+    }
+  }
+
   async function handleDeleteConfirm() {
     if (!deletingJobId) return
     setIsDeleting(true)
@@ -174,53 +201,44 @@ export function CalendarClient({ initialJobs, initialDate }: CalendarClientProps
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Calendar</h1>
-            <p className="text-sm text-slate-400">Plan your month and book jobs quickly</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/"
-              className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href={`/new-job?date=${selectedDate}`}
-              className="text-xs font-medium px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-            >
-              + Add Job
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-5">
-        <section className="bg-white rounded-2xl border border-slate-100 p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-3 mb-4">
+    <SidebarLayout
+      title="Calendar"
+      subtitle="Plan your month and book jobs quickly"
+      isWorker={isWorker}
+      headerActions={
+        !isWorker ? (
+          <Link
+            href={`/new-job?date=${selectedDate}`}
+            className="hp-btn-primary inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm"
+          >
+            + Add Job
+          </Link>
+        ) : null
+      }
+    >
+      <div className="space-y-5">
+        <section className="hp-card rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:p-6">
+          <div className="mb-6 flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={goToPreviousMonth}
-              className="w-10 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+              className="hp-btn-secondary flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm"
               aria-label="Previous month"
             >
-              ←
+              <ChevronLeft className="h-5 w-5" aria-hidden />
             </button>
-            <h2 className="text-lg font-semibold text-slate-900">{monthLabel}</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900">{monthLabel}</h2>
             <button
               type="button"
               onClick={goToNextMonth}
-              className="w-10 h-10 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+              className="hp-btn-secondary flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm"
               aria-label="Next month"
             >
-              →
+              <ChevronRight className="h-5 w-5" aria-hidden />
             </button>
           </div>
 
-          <div className="grid grid-cols-7 gap-2 text-center text-xs font-medium text-slate-400 uppercase tracking-wide mb-2">
+          <div className="mb-2 grid grid-cols-7 gap-2 text-center text-[11px] font-medium uppercase tracking-wide text-slate-400">
             {weekdayLabels.map(label => (
               <div key={label} className="py-1">
                 {label}
@@ -231,7 +249,7 @@ export function CalendarClient({ initialJobs, initialDate }: CalendarClientProps
           <div className="grid grid-cols-7 gap-2">
             {calendarDays.map((cell, index) => {
               if (!cell) {
-                return <div key={`empty-${index}`} className="min-h-28 rounded-2xl bg-slate-50/60" />
+                return <div key={`empty-${index}`} className="min-h-28 rounded-2xl bg-slate-50/50" />
               }
 
               const isSelected = cell.date === selectedDate
@@ -249,21 +267,23 @@ export function CalendarClient({ initialJobs, initialDate }: CalendarClientProps
                       setSelectedDate(cell.date)
                     }
                   }}
-                  className={`min-h-28 rounded-2xl border p-2 text-left transition-colors cursor-pointer ${
-                    isSelected ? 'border-blue-200 bg-blue-50/60' : 'border-slate-100 bg-white hover:bg-slate-50'
+                  className={`min-h-28 cursor-pointer rounded-2xl border p-2 text-left shadow-sm transition-all duration-200 ease-out ${
+                    isSelected ? 'border-[#2563eb]/30 bg-blue-50/80 ring-1 ring-[#2563eb]/20' : 'border-slate-100 bg-white hover:-translate-y-0.5 hover:shadow-md'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <span className={`text-sm font-semibold ${isSelected ? 'text-blue-700' : 'text-slate-900'}`}>
+                    <span className={`text-sm font-semibold ${isSelected ? 'text-[#2563eb]' : 'text-slate-900'}`}>
                       {cell.dayNumber}
                     </span>
-                    <Link
-                      href={`/new-job?date=${cell.date}`}
-                      onClick={event => event.stopPropagation()}
-                      className="text-[11px] font-medium text-blue-600 hover:text-blue-700"
-                    >
-                      + Add Job
-                    </Link>
+                    {!isWorker ? (
+                      <Link
+                        href={`/new-job?date=${cell.date}`}
+                        onClick={event => event.stopPropagation()}
+                        className="text-[11px] font-medium text-[#2563eb] transition-colors duration-200 hover:underline"
+                      >
+                        + Add Job
+                      </Link>
+                    ) : null}
                   </div>
 
                   {hasJobs ? (
@@ -288,76 +308,111 @@ export function CalendarClient({ initialJobs, initialDate }: CalendarClientProps
           </div>
         </section>
 
-        <section className="space-y-3">
+        <section className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">{selectedDateLabel}</h2>
-              <p className="text-sm text-slate-400">
+              <h2 className="text-lg font-semibold text-slate-900 tracking-tight">{selectedDateLabel}</h2>
+              <p className="text-sm font-medium text-slate-400 mt-1">
                 {selectedJobs.length} {selectedJobs.length === 1 ? 'job' : 'jobs'} scheduled
               </p>
             </div>
-            <Link
-              href={`/new-job?date=${selectedDate}`}
-              className="text-xs font-medium px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-            >
-              + Add Job
-            </Link>
+            {!isWorker ? (
+              <Link href={`/new-job?date=${selectedDate}`} className="hp-btn-primary rounded-xl px-4 py-2 text-sm">
+                + Add Job
+              </Link>
+            ) : null}
           </div>
 
           {selectedJobs.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center text-slate-400">
-              <p className="text-4xl mb-2">📅</p>
-              <p className="font-medium">No jobs booked for this day</p>
+            <div className="hp-card rounded-2xl border border-slate-100 bg-white p-10 text-center shadow-sm">
+              <CalendarDays className="mx-auto mb-2 h-14 w-14 text-slate-200" strokeWidth={1.25} aria-hidden />
+              <p className="text-sm font-medium text-slate-500">No jobs booked for this day</p>
             </div>
           ) : (
-            selectedJobs.map(job => {
+            <div key={selectedDate} className="space-y-4">
+              {selectedJobs.map((job, index) => {
               const status = statusConfig[job.status]
-              const icon = serviceIcons[job.service_type] ?? '🔧'
+              const canCancelJob = job.status !== 'completed' && job.status !== 'cancelled'
 
               return (
-                <div key={job.id} className="bg-white rounded-2xl border border-slate-100 p-4">
+                <div
+                  key={job.id}
+                  style={{ animationDelay: `${Math.min(index, 12) * 55}ms` }}
+                  className={`hp-stagger-fade-up hp-card rounded-2xl border border-slate-100 bg-white border-l-[6px] p-5 shadow-sm transition-[border-color,box-shadow,transform] duration-200 ${
+                    job.status === 'scheduled'
+                      ? 'border-l-[#2563eb]'
+                      : job.status === 'in_progress'
+                        ? 'border-l-[#d97706]'
+                        : job.status === 'completed'
+                          ? 'border-l-[#059669]'
+                          : 'border-l-[#dc2626]'
+                  }`}
+                >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-11 h-11 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-xl">
-                        {icon}
+                    <div className="flex min-w-0 items-start gap-3">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-slate-50 text-slate-600">
+                        <ServiceTypeIcon serviceType={job.service_type} className="h-5 w-5" />
                       </div>
-                      <div>
-                        <p className="font-semibold text-slate-900">{job.customer_name}</p>
-                        <p className="text-sm text-slate-500">{job.service_type}</p>
-                        <p className="text-xs text-slate-400 mt-1">📍 {job.address}</p>
-                        <Link href={`/new-job?date=${job.date}`} className="mt-2 inline-block text-xs font-medium text-blue-600 hover:text-blue-700">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-slate-900">{job.customer_name}</p>
+                        <p className="truncate text-sm font-medium text-slate-500">{job.service_type}</p>
+                        <AddressLine className="mt-1">{job.address}</AddressLine>
+                        <Link href={`/new-job?date=${job.date}`} className="mt-2 inline-block text-xs font-medium text-[#2563eb] hover:underline">
                           {formatDateLabel(job.date)}
                         </Link>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-semibold text-slate-700">{formatTimeLabel(job.time)}</p>
-                      <p className="text-sm font-bold text-blue-600">${job.price}</p>
+                      <p className="text-sm font-semibold text-slate-700 tabular-nums">{formatTimeLabel(job.time)}</p>
+                      <p className="mt-1 text-base font-semibold tabular-nums text-[#2563eb]">${job.price}</p>
                     </div>
                   </div>
-                  <div className="mt-3 pt-3 border-t border-slate-50 flex items-center justify-between gap-2">
-                    <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${status.bg} ${status.text}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4">
+                    <span
+                      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium transition-colors duration-200 ${status.bg} ${status.text}`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
                       {status.label}
                     </span>
-                    <div className="flex items-center gap-2">
-                      <button type="button" className="text-xs text-blue-600 font-medium hover:text-blue-700">
-                        View details →
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        className="text-xs font-medium text-[#2563eb] transition-colors duration-200 hover:underline"
+                      >
+                        View details
                       </button>
-                      <button type="button" onClick={() => setEditingJob(job)} className="text-xs text-slate-600 font-medium hover:text-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => setEditingJob(job)}
+                        className="hp-btn-secondary rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm"
+                      >
                         Edit
                       </button>
-                      <button type="button" onClick={() => setDeletingJobId(job.id)} className="text-xs text-red-600 font-medium hover:text-red-700">
+                      {canCancelJob ? (
+                        <button
+                          type="button"
+                          onClick={() => setCancellingJobId(job.id)}
+                          className="hp-btn-secondary rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-[color,border-color,box-shadow,transform] duration-200"
+                        >
+                          Cancel Job
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => setDeletingJobId(job.id)}
+                        className="hp-btn-secondary rounded-xl border border-red-100 bg-white px-3 py-1.5 text-xs font-medium text-[#dc2626] shadow-sm"
+                      >
                         Delete
                       </button>
                     </div>
                   </div>
                 </div>
               )
-            })
+            })}
+            </div>
           )}
         </section>
-      </main>
+      </div>
       {editingJob ? (
         <JobEditModal
           key={editingJob.id}
@@ -370,6 +425,13 @@ export function CalendarClient({ initialJobs, initialDate }: CalendarClientProps
       {deletingJobId ? (
         <DeleteJobModal isDeleting={isDeleting} onCancel={() => !isDeleting && setDeletingJobId(null)} onConfirm={handleDeleteConfirm} />
       ) : null}
-    </div>
+      {cancellingJobId ? (
+        <CancelJobModal
+          isCancelling={isCancellingJob}
+          onDismiss={() => !isCancellingJob && setCancellingJobId(null)}
+          onConfirmCancel={handleConfirmCancelJob}
+        />
+      ) : null}
+    </SidebarLayout>
   )
 }

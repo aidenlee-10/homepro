@@ -1,15 +1,18 @@
-import Link from 'next/link'
+import { ScrollText } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import { getCompanyIdForSession } from '@/lib/company-server'
+import { getCompanyIdForSession, getSessionMembership } from '@/lib/company-server'
 import type { Job } from '@/lib/supabase'
+import { AddressLine } from '@/app/components/address-line'
+import { ServiceTypeIcon } from '@/app/components/service-type-icon'
+import { SidebarLayout } from '@/app/components/sidebar-layout'
 
 const NEW_YORK_TIME_ZONE = 'America/New_York'
 
 const statusConfig = {
-  scheduled: { label: 'Scheduled', bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' },
-  in_progress: { label: 'In Progress', bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400' },
-  completed: { label: 'Completed', bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-  cancelled: { label: 'Cancelled', bg: 'bg-red-50', text: 'text-red-600', dot: 'bg-red-400' },
+  scheduled: { label: 'Scheduled', bg: 'bg-blue-50', text: 'text-[#2563eb]', dot: 'bg-[#2563eb]' },
+  in_progress: { label: 'In progress', bg: 'bg-amber-50', text: 'text-[#d97706]', dot: 'bg-[#d97706]' },
+  completed: { label: 'Completed', bg: 'bg-emerald-50', text: 'text-[#059669]', dot: 'bg-[#059669]' },
+  cancelled: { label: 'Cancelled', bg: 'bg-red-50', text: 'text-[#dc2626]', dot: 'bg-[#dc2626]' },
 } as const
 
 function monthKeyFromDate(date: string) {
@@ -42,21 +45,24 @@ function compareJobsRecentFirst(a: Job, b: Job) {
   return b.time.localeCompare(a.time)
 }
 
+function NoCompanyNotice() {
+  return (
+    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
+        <p className="text-lg font-semibold tracking-tight text-slate-900">Job history</p>
+        <p className="mt-2 text-sm font-medium text-slate-400">No company found for your account.</p>
+      </div>
+    </div>
+  )
+}
+
 export default async function HistoryPage() {
   const companyId = await getCompanyIdForSession()
+  const membership = await getSessionMembership()
   const supabase = await createClient()
 
   if (!companyId) {
-    return (
-      <div className="min-h-screen bg-slate-50">
-        <header className="bg-white border-b border-slate-200 px-4 py-4">
-          <div className="max-w-lg mx-auto">
-            <h1 className="text-xl font-bold text-slate-900">Job history</h1>
-            <p className="text-sm text-slate-500 mt-1">No company found for your account.</p>
-          </div>
-        </header>
-      </div>
-    )
+    return <NoCompanyNotice />
   }
 
   const { data: jobsData, error } = await supabase
@@ -87,76 +93,79 @@ export default async function HistoryPage() {
   const monthKeys = [...byMonth.keys()].sort((a, b) => b.localeCompare(a))
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-10">
-        <div className="max-w-lg mx-auto flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Job history</h1>
-            <p className="text-sm text-slate-400">All jobs for your company</p>
+    <SidebarLayout title="Job history" subtitle="All jobs for your company" isWorker={membership?.isWorker}>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="hp-card rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Total revenue</p>
+            <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-[#059669]">${totalRevenue}</p>
+            <p className="mt-1.5 text-xs font-medium text-slate-400">From completed jobs</p>
           </div>
-          <Link
-            href="/"
-            className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors shrink-0"
-          >
-            Dashboard
-          </Link>
-        </div>
-      </header>
-
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-5">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-white rounded-2xl border border-slate-100 p-4">
-            <p className="text-xs text-slate-400 uppercase tracking-wide">Total revenue</p>
-            <p className="text-3xl font-bold text-emerald-600 mt-1">${totalRevenue}</p>
-            <p className="text-xs text-slate-400 mt-1">from completed jobs</p>
-          </div>
-          <div className="bg-white rounded-2xl border border-slate-100 p-4">
-            <p className="text-xs text-slate-400 uppercase tracking-wide">Completed</p>
-            <p className="text-3xl font-bold text-slate-900 mt-1">{completedCount}</p>
-            <p className="text-xs text-slate-400 mt-1">jobs marked complete</p>
+          <div className="hp-card rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Completed</p>
+            <p className="mt-2 text-3xl font-semibold tabular-nums tracking-tight text-slate-900">{completedCount}</p>
+            <p className="mt-1.5 text-xs font-medium text-slate-400">Jobs marked complete</p>
           </div>
         </div>
 
         {jobs.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center text-slate-400">
-            <p className="text-4xl mb-2">📜</p>
-            <p className="font-medium">No jobs yet</p>
+          <div className="hp-card rounded-2xl border border-slate-100 bg-white p-10 text-center shadow-sm">
+            <ScrollText className="mx-auto mb-3 h-14 w-14 text-slate-200" strokeWidth={1.25} aria-hidden />
+            <p className="text-sm font-semibold text-slate-900">No jobs yet</p>
+            <p className="mt-1 text-sm font-medium text-slate-400">Completed work will show up here.</p>
           </div>
         ) : (
           monthKeys.map(monthKey => {
             const monthJobs = byMonth.get(monthKey) ?? []
             const monthSubtotal = monthJobs.reduce((sum, j) => sum + j.price, 0)
             return (
-              <section key={monthKey} className="space-y-3">
+              <section key={monthKey} className="space-y-4">
                 <div className="flex items-baseline justify-between gap-3 px-0.5">
-                  <h2 className="text-lg font-semibold text-slate-900">{formatMonthHeading(monthKey)}</h2>
+                  <h2 className="text-lg font-semibold tracking-tight text-slate-900">{formatMonthHeading(monthKey)}</h2>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-slate-700">${monthSubtotal}</p>
-                    <p className="text-xs text-slate-400">{monthJobs.length} job{monthJobs.length === 1 ? '' : 's'}</p>
+                    <p className="text-sm font-semibold tabular-nums text-slate-900">${monthSubtotal}</p>
+                    <p className="text-xs font-medium text-slate-400">
+                      {monthJobs.length} job{monthJobs.length === 1 ? '' : 's'}
+                    </p>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  {monthJobs.map(job => {
+                <div className="space-y-4">
+                  {monthJobs.map((job, index) => {
                     const s = statusConfig[job.status]
+                    const leftBorder =
+                      job.status === 'scheduled'
+                        ? 'border-l-[#2563eb]'
+                        : job.status === 'in_progress'
+                          ? 'border-l-[#d97706]'
+                          : job.status === 'completed'
+                            ? 'border-l-[#059669]'
+                            : 'border-l-[#dc2626]'
                     return (
-                      <div key={job.id} className="bg-white rounded-2xl border border-slate-100 p-4">
+                      <div
+                        key={job.id}
+                        style={{ animationDelay: `${Math.min(index, 12) * 50}ms` }}
+                        className={`hp-stagger-fade-up hp-card rounded-2xl border border-slate-100 border-l-[6px] bg-white p-5 shadow-sm ${leftBorder}`}
+                      >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="font-semibold text-slate-900">{job.customer_name}</p>
-                            <p className="text-sm text-slate-500 mt-0.5">{job.service_type}</p>
-                            <p className="text-xs text-slate-500 mt-1">{formatJobDate(job.date)}</p>
-                            <p className="text-xs text-slate-400 mt-1">📍 {job.address}</p>
+                            <p className="mt-0.5 flex items-center gap-2 text-sm font-medium text-slate-500">
+                              <ServiceTypeIcon serviceType={job.service_type} className="h-4 w-4 shrink-0 text-slate-400" />
+                              {job.service_type}
+                            </p>
+                            <p className="text-xs font-medium text-slate-400 mt-1">{formatJobDate(job.date)}</p>
+                            <AddressLine className="mt-1">{job.address}</AddressLine>
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="text-sm font-bold text-blue-600">${job.price}</p>
+                            <p className="text-sm font-semibold tabular-nums text-[#2563eb]">${job.price}</p>
                           </div>
                         </div>
-                        <div className="mt-3 pt-3 border-t border-slate-50">
+                        <div className="mt-4 border-t border-slate-100 pt-4">
                           <span
-                            className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${s.bg} ${s.text}`}
+                            className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${s.bg} ${s.text}`}
                           >
-                            <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+                            <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
                             {s.label}
                           </span>
                         </div>
@@ -168,7 +177,7 @@ export default async function HistoryPage() {
             )
           })
         )}
-      </main>
-    </div>
+      </div>
+    </SidebarLayout>
   )
 }

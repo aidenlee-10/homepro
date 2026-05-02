@@ -1,11 +1,15 @@
 'use client'
 
 import { FormEvent, useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Invite } from '@/lib/supabase'
 
 const supabase = createClient()
+
+const field =
+  'mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 transition-[border-color,box-shadow] duration-200 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/35 focus:border-[#2563eb] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.12)]'
 
 type Props = {
   token: string
@@ -110,76 +114,65 @@ export function InviteAcceptClient({ token }: Props) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <p className="text-sm text-slate-500">Loading invite…</p>
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center px-4">
+        <p className="text-sm font-medium text-slate-400">Loading invite…</p>
       </div>
     )
   }
 
   if (!invite || loadError) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-white rounded-2xl border border-slate-100 p-6 text-center">
-          <p className="text-lg font-semibold text-slate-900">Invite unavailable</p>
-          <p className="text-sm text-slate-500 mt-2">{loadError || 'This link is no longer valid.'}</p>
+      <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md rounded-2xl border border-slate-100 bg-white p-8 text-center shadow-sm">
+          <p className="text-lg font-semibold tracking-tight text-slate-900">Invite unavailable</p>
+          <p className="mt-2 text-sm font-medium text-slate-400">{loadError || 'This link is no longer valid.'}</p>
+          <Link
+            href="/login"
+            className="hp-btn-primary mt-6 inline-flex rounded-xl px-4 py-2 text-sm"
+          >
+            Sign in
+          </Link>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
-        <h1 className="text-xl font-bold text-slate-900">Join HomePro</h1>
-        <p className="text-sm text-slate-500 mt-1">Create your account to accept the invite.</p>
+    <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center px-4 py-12">
+      <div className="mb-8 text-center">
+        <Link
+          href="/"
+          className="text-2xl font-semibold tracking-tight text-white transition-opacity duration-200 hover:opacity-90"
+        >
+          HomePro
+        </Link>
+        <p className="mt-2 text-sm font-medium text-slate-400">Accept your team invite</p>
+      </div>
+      <div className="w-full max-w-md rounded-2xl border border-slate-100 bg-white p-8 shadow-sm">
+        <h1 className="text-lg font-semibold tracking-tight text-slate-900">Create your account</h1>
+        <p className="mt-1.5 text-sm font-medium text-slate-400">You will join your team after signing up.</p>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
           <div>
-            <label htmlFor="name" className="text-sm font-medium text-slate-700">
+            <label htmlFor="name" className="text-sm font-medium text-slate-400">
               Name
             </label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              required
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <input id="name" type="text" value={name} onChange={e => setName(e.target.value)} required className={field} />
           </div>
           <div>
-            <label htmlFor="email" className="text-sm font-medium text-slate-700">
+            <label htmlFor="email" className="text-sm font-medium text-slate-400">
               Email
             </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required className={field} />
           </div>
           <div>
-            <label htmlFor="password" className="text-sm font-medium text-slate-700">
+            <label htmlFor="password" className="text-sm font-medium text-slate-400">
               Password
             </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required minLength={6} className={field} />
           </div>
-          {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full text-sm font-medium px-4 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-          >
+          {formError ? <p className="text-sm font-medium text-[#dc2626]">{formError}</p> : null}
+          <button type="submit" disabled={busy} className="hp-btn-primary w-full rounded-xl px-4 py-2 text-sm">
             {busy ? 'Creating account…' : 'Create account'}
           </button>
         </form>

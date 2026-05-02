@@ -1,11 +1,14 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
-import Link from 'next/link'
+import { HardHat } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Worker } from '@/lib/supabase'
 
 const supabase = createClient()
+
+const field =
+  'mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 placeholder:text-slate-400 transition-[border-color,box-shadow] duration-200 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/35 focus:border-[#2563eb] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.12)]'
 
 type WorkersClientProps = {
   initialWorkers: Worker[]
@@ -66,43 +69,26 @@ export function WorkersClient({ initialWorkers, companyId, isOwner }: WorkersCli
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-10">
-        <div className="max-w-lg mx-auto flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Workers</h1>
-            <p className="text-sm text-slate-400">Your team</p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Link
-              href="/"
-              className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              Back
-            </Link>
-            {isOwner ? (
-              <button
-                type="button"
-                onClick={() => setInviteOpen(true)}
-                className="text-xs font-medium px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-              >
-                Invite Worker
-              </button>
-            ) : null}
-          </div>
+    <>
+      {isOwner && initialWorkers.length > 0 ? (
+        <div className="mb-5 flex justify-end">
+          <button type="button" onClick={() => setInviteOpen(true)} className="hp-btn-primary rounded-xl px-4 py-2 text-sm">
+            Invite worker
+          </button>
         </div>
-      </header>
+      ) : null}
 
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-3">
+      <div className="space-y-4">
         {initialWorkers.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center text-slate-400">
-            <p className="text-4xl mb-2">👷</p>
-            <p className="font-medium">No workers yet</p>
+          <div className="hp-card rounded-2xl border border-slate-100 bg-white p-10 text-center shadow-sm">
+            <HardHat className="mx-auto mb-3 h-14 w-14 text-slate-200" strokeWidth={1.25} aria-hidden />
+            <p className="text-sm font-semibold text-slate-900">No workers yet</p>
+            <p className="mt-1 text-sm font-medium text-slate-400">Invite teammates to see jobs on their dashboard.</p>
             {isOwner ? (
               <button
                 type="button"
                 onClick={() => setInviteOpen(true)}
-                className="mt-3 text-sm text-blue-600 font-medium hover:text-blue-700"
+                className="mt-5 text-sm font-medium text-[#2563eb] transition-colors duration-200 hover:text-blue-800"
               >
                 Send an invite →
               </button>
@@ -110,48 +96,53 @@ export function WorkersClient({ initialWorkers, companyId, isOwner }: WorkersCli
           </div>
         ) : (
           initialWorkers.map(worker => (
-            <div key={worker.id} className="bg-white rounded-2xl border border-slate-100 p-4">
+            <div
+              key={worker.id}
+              className="hp-card rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"
+            >
               <p className="font-semibold text-slate-900">{worker.name ?? '—'}</p>
-              <p className="text-sm text-slate-500 mt-1">{worker.email ?? '—'}</p>
-              <p className="text-xs text-slate-400 mt-2 inline-flex items-center gap-1.5">
-                <span className="font-medium text-slate-600 capitalize">{worker.role}</span>
+              <p className="text-sm font-medium text-slate-400 mt-1">{worker.email ?? '—'}</p>
+              <p className="mt-3 inline-flex rounded-full bg-slate-50 px-3 py-1 text-xs font-medium capitalize text-slate-600">
+                {worker.role}
               </p>
             </div>
           ))
         )}
-      </main>
+      </div>
 
       {inviteOpen ? (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center px-4">
-          <div className="w-full max-w-md bg-white rounded-2xl border border-slate-100 p-5 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-900">Invite worker</h2>
-              <button type="button" onClick={closeInviteModal} className="text-sm text-slate-500 hover:text-slate-700">
+        <div className="hp-animate-modal-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-[2px]">
+          <div className="hp-animate-modal-panel w-full max-w-md rounded-2xl border border-slate-100 bg-white p-6 shadow-lg">
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900">Invite worker</h2>
+              <button
+                type="button"
+                onClick={closeInviteModal}
+                className="text-sm font-medium text-slate-400 transition-colors duration-200 hover:text-slate-600"
+              >
                 Close
               </button>
             </div>
 
             {inviteLink ? (
-              <div className="space-y-3">
-                <p className="text-sm text-slate-600">Share this link with your worker:</p>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 break-all">{inviteLink}</div>
+              <div className="space-y-4">
+                <p className="text-sm font-medium text-slate-400">Share this link with your worker:</p>
+                <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-800 break-all">
+                  {inviteLink}
+                </div>
                 {!baseUrl ? (
-                  <p className="text-xs text-amber-700">
-                    Set <code className="font-mono">NEXT_PUBLIC_SITE_URL</code> in your env for a full domain link.
+                  <p className="text-xs font-medium text-[#d97706]">
+                    Set <code className="font-mono text-slate-700">NEXT_PUBLIC_SITE_URL</code> in your env for a full domain link.
                   </p>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={closeInviteModal}
-                  className="w-full text-sm font-medium px-4 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                >
+                <button type="button" onClick={closeInviteModal} className="hp-btn-primary w-full rounded-xl px-4 py-2 text-sm">
                   Done
                 </button>
               </div>
             ) : (
-              <form onSubmit={sendInvite} className="space-y-4">
+              <form onSubmit={sendInvite} className="space-y-5">
                 <div>
-                  <label htmlFor="inviteEmail" className="text-sm font-medium text-slate-700">
+                  <label htmlFor="inviteEmail" className="text-sm font-medium text-slate-400">
                     Worker email
                   </label>
                   <input
@@ -160,26 +151,22 @@ export function WorkersClient({ initialWorkers, companyId, isOwner }: WorkersCli
                     value={inviteEmail}
                     onChange={e => setInviteEmail(e.target.value)}
                     required
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={field}
                     placeholder="worker@example.com"
                   />
                 </div>
-                {inviteError ? <p className="text-sm text-red-600">{inviteError}</p> : null}
-                <div className="flex justify-end gap-2">
+                {inviteError ? <p className="text-sm font-medium text-[#dc2626]">{inviteError}</p> : null}
+                <div className="flex justify-end gap-2 pt-1">
                   <button
                     type="button"
                     onClick={closeInviteModal}
                     disabled={inviteBusy}
-                    className="text-sm font-medium px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    className="hp-btn-secondary text-sm font-medium px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm disabled:opacity-50"
                   >
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    disabled={inviteBusy}
-                    className="text-sm font-medium px-4 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-                  >
-                    {inviteBusy ? 'Sending…' : 'Send Invite'}
+                  <button type="submit" disabled={inviteBusy} className="hp-btn-primary rounded-xl px-4 py-2 text-sm">
+                    {inviteBusy ? 'Sending…' : 'Send invite'}
                   </button>
                 </div>
               </form>
@@ -187,6 +174,6 @@ export function WorkersClient({ initialWorkers, companyId, isOwner }: WorkersCli
           </div>
         </div>
       ) : null}
-    </div>
+    </>
   )
 }

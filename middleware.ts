@@ -27,15 +27,16 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const isLoginRoute = request.nextUrl.pathname === '/login'
+  const isSignupRoute = request.nextUrl.pathname === '/signup'
   const isInviteRoute = request.nextUrl.pathname.startsWith('/invite/')
 
-  if (!user && !isLoginRoute && !isInviteRoute) {
+  if (!user && !isLoginRoute && !isSignupRoute && !isInviteRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  if (user && isLoginRoute) {
+  if (user && (isLoginRoute || isSignupRoute)) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)

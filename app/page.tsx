@@ -9,7 +9,7 @@ async function getTodaysJobs() {
   const supabase = await createClient()
   const membership = await getSessionMembership()
   if (!membership?.companyId) {
-    return { jobs: [] as Job[], isWorker: false }
+    return { jobs: [] as Job[], isWorker: false, displayName: 'there' }
   }
 
   const today = new Date().toLocaleDateString('en-CA', { timeZone: NEW_YORK_TIME_ZONE })
@@ -27,13 +27,13 @@ async function getTodaysJobs() {
   const { data, error } = await jobsQuery
   if (error) {
     console.error('Error fetching jobs:', error.message)
-    return { jobs: [] as Job[], isWorker: membership.isWorker }
+    return { jobs: [] as Job[], isWorker: membership.isWorker, displayName: membership.displayName }
   }
-  return { jobs: data as Job[], isWorker: membership.isWorker }
+  return { jobs: data as Job[], isWorker: membership.isWorker, displayName: membership.displayName }
 }
 
 export default async function DashboardPage() {
-  const { jobs, isWorker } = await getTodaysJobs()
+  const { jobs, isWorker, displayName } = await getTodaysJobs()
   const todayLabel = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
@@ -41,5 +41,5 @@ export default async function DashboardPage() {
     timeZone: NEW_YORK_TIME_ZONE,
   })
 
-  return <DashboardClient initialJobs={jobs} todayLabel={todayLabel} isWorker={isWorker} />
+  return <DashboardClient initialJobs={jobs} todayLabel={todayLabel} isWorker={isWorker} displayName={displayName} />
 }

@@ -1,6 +1,7 @@
 import { CalendarClient } from './calendar-client'
 import { createClient } from '@/lib/supabase/server'
 import { Job } from '@/lib/supabase'
+import { getSessionMembership } from '@/lib/company-server'
 
 const NEW_YORK_TIME_ZONE = 'America/New_York'
 
@@ -37,8 +38,9 @@ async function getAllJobs(): Promise<Job[]> {
 }
 
 export default async function CalendarPage() {
+  const membership = await getSessionMembership()
   const jobs = await getAllJobs()
   const initialDate = new Date().toLocaleDateString('en-CA', { timeZone: NEW_YORK_TIME_ZONE })
 
-  return <CalendarClient initialJobs={jobs} initialDate={initialDate} />
+  return <CalendarClient initialJobs={jobs} initialDate={initialDate} isWorker={membership?.isWorker ?? false} />
 }

@@ -163,49 +163,44 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
     })
   }
 
+  const field =
+    'mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 transition-[border-color,box-shadow] duration-200 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/35 focus:border-[#2563eb] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.12)]'
+
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center px-4">
-      <div className="w-full max-w-lg bg-white rounded-2xl border border-slate-100 p-5 shadow-xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">Edit Job</h2>
-          <button type="button" onClick={onClose} className="text-sm text-slate-500 hover:text-slate-700">
+    <div className="hp-animate-modal-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-[2px]">
+      <div className="hp-animate-modal-panel max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-100 bg-white p-6 shadow-lg">
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold tracking-tight text-slate-900">Edit job</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-sm font-medium text-slate-400 transition-colors duration-200 hover:text-slate-600"
+          >
             Close
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="text-sm font-medium text-slate-700">Customer name</label>
-            <input
-              type="text"
-              value={customerName}
-              onChange={event => setCustomerName(event.target.value)}
-              required
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <label className="text-sm font-medium text-slate-400">Customer name</label>
+            <input type="text" value={customerName} onChange={event => setCustomerName(event.target.value)} required className={field} />
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700">Address</label>
-            <input
-              type="text"
-              value={address}
-              onChange={event => setAddress(event.target.value)}
-              required
-              className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <label className="text-sm font-medium text-slate-400">Address</label>
+            <input type="text" value={address} onChange={event => setAddress(event.target.value)} required className={field} />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Date</label>
+            <span className="text-sm font-medium text-slate-400">Date</span>
             <div className="grid grid-cols-3 gap-3">
-              <select value={monthValue} onChange={event => setMonthValue(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+              <select value={monthValue} onChange={event => setMonthValue(event.target.value)} className={field} required>
                 {monthOptions.map(option => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
                 ))}
               </select>
-              <select value={dayValue} onChange={event => setDayValue(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+              <select value={dayValue} onChange={event => setDayValue(event.target.value)} className={field} required>
                 {dayOptions.map(option => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -219,29 +214,29 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
                 value={yearValue}
                 onChange={event => setYearValue(event.target.value)}
                 required
-                className="rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={field}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Time</label>
+            <span className="text-sm font-medium text-slate-400">Time</span>
             <div className="grid grid-cols-3 gap-3">
-              <select value={hourValue} onChange={event => setHourValue(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+              <select value={hourValue} onChange={event => setHourValue(event.target.value)} className={field} required>
                 {hourOptions.map(option => (
                   <option key={option} value={option}>
                     {option}
                   </option>
                 ))}
               </select>
-              <select value={minute} onChange={event => setMinute(event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+              <select value={minute} onChange={event => setMinute(event.target.value)} className={field} required>
                 {minuteOptions.map(option => (
                   <option key={option} value={option}>
                     {option}
                   </option>
                 ))}
               </select>
-              <select value={meridiem} onChange={event => setMeridiem(event.target.value as 'AM' | 'PM')} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select value={meridiem} onChange={event => setMeridiem(event.target.value as 'AM' | 'PM')} className={field}>
                 <option value="AM">AM</option>
                 <option value="PM">PM</option>
               </select>
@@ -249,12 +244,12 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
           </div>
 
           <div>
-            <label className="text-sm font-medium text-slate-700">Assign to</label>
+            <label className="text-sm font-medium text-slate-400">Assign to</label>
             <select
               value={assignedTo}
               onChange={event => setAssignedTo(event.target.value)}
               disabled={!workersLoaded}
-              className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={field}
             >
               <option value="">{workersLoaded ? 'Unassigned' : 'Loading workers…'}</option>
               {workers.map(w => (
@@ -267,7 +262,7 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium text-slate-700">Service type</label>
+              <label className="text-sm font-medium text-slate-400">Service type</label>
               <select
                 value={serviceType}
                 onChange={event => {
@@ -281,7 +276,7 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
                   }
                 }}
                 disabled={!servicesLoaded}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={field}
               >
                 <option value="">{servicesLoaded ? 'Select service…' : 'Loading services…'}</option>
                 {services.map(service => (
@@ -293,7 +288,7 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700">Price</label>
+              <label className="text-sm font-medium text-slate-400">Price</label>
               <input
                 type="number"
                 min="0"
@@ -302,32 +297,30 @@ export function JobEditModal({ job, isSaving, onClose, onSave }: JobEditModalPro
                 value={price}
                 onChange={event => setPrice(event.target.value)}
                 required
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={field}
               />
             </div>
           </div>
 
           {serviceType === '__other__' ? (
             <div>
-              <label className="text-sm font-medium text-slate-700">Custom service</label>
-              <input
-                type="text"
-                value={customService}
-                onChange={event => setCustomService(event.target.value)}
-                required
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <label className="text-sm font-medium text-slate-400">Custom service</label>
+              <input type="text" value={customService} onChange={event => setCustomService(event.target.value)} required className={field} />
             </div>
           ) : null}
 
-          {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
+          {errorMessage ? <p className="text-sm font-medium text-[#dc2626]">{errorMessage}</p> : null}
 
-          <div className="pt-1 flex items-center justify-end gap-2">
-            <button type="button" onClick={onClose} className="text-sm font-medium px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors">
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="hp-btn-secondary text-sm font-medium px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm"
+            >
               Cancel
             </button>
-            <button type="submit" disabled={isSaving} className="text-sm font-medium px-4 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition-colors">
-              {isSaving ? 'Saving…' : 'Save Changes'}
+            <button type="submit" disabled={isSaving} className="hp-btn-primary rounded-xl px-4 py-2 text-sm">
+              {isSaving ? 'Saving…' : 'Save changes'}
             </button>
           </div>
         </form>

@@ -1,11 +1,14 @@
 'use client'
 
 import { FormEvent, useMemo, useState } from 'react'
-import Link from 'next/link'
+import { Wrench } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { Service } from '@/lib/supabase'
 
 const supabase = createClient()
+
+const field =
+  'mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-slate-900 placeholder:text-slate-400 transition-[border-color,box-shadow] duration-200 focus:outline-none focus:ring-2 focus:ring-[#2563eb]/35 focus:border-[#2563eb] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.12)]'
 
 type ServicesClientProps = {
   initialServices: Service[]
@@ -137,60 +140,45 @@ export function ServicesClient({ initialServices, companyId }: ServicesClientPro
 
   const isFormOpen = isAddOpen || Boolean(editingService)
   const formTitle = editingService ? 'Edit service' : 'Add service'
-  const saveLabel = editingService ? 'Save Changes' : 'Add Service'
+  const saveLabel = editingService ? 'Save changes' : 'Add service'
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-4 py-4 sticky top-0 z-10">
-        <div className="max-w-lg mx-auto flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Services</h1>
-            <p className="text-sm text-slate-400">Manage your company&apos;s service catalog</p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Link
-              href="/"
-              className="text-xs font-medium px-3 py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              Back
-            </Link>
-            <button
-              type="button"
-              onClick={openAddModal}
-              className="text-xs font-medium px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-            >
-              Add Service
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-3">
+    <>
+      <div className="mb-5 flex justify-end">
+        <button type="button" onClick={openAddModal} className="hp-btn-primary rounded-xl px-4 py-2 text-sm">
+          Add service
+        </button>
+      </div>
+      <div className="space-y-4">
         {sortedServices.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-100 p-8 text-center text-slate-400">
-            <p className="text-4xl mb-2">🧰</p>
-            <p className="font-medium">No services yet</p>
+          <div className="hp-card rounded-2xl border border-slate-100 bg-white p-10 text-center shadow-sm">
+            <Wrench className="mx-auto mb-3 h-14 w-14 text-slate-200" strokeWidth={1.25} aria-hidden />
+            <p className="text-sm font-semibold text-slate-900">No services yet</p>
+            <p className="mt-1 text-sm font-medium text-slate-400">Define what you sell and default prices for new jobs.</p>
             <button
               type="button"
               onClick={openAddModal}
-              className="mt-3 text-sm text-blue-600 font-medium hover:text-blue-700"
+              className="mt-5 text-sm font-medium text-[#2563eb] transition-colors duration-200 hover:text-blue-800"
             >
               Add your first service →
             </button>
           </div>
         ) : (
           sortedServices.map(service => (
-            <div key={service.id} className="bg-white rounded-2xl border border-slate-100 p-4">
+            <div
+              key={service.id}
+              className="hp-card rounded-2xl border border-slate-100 bg-white p-5 shadow-sm"
+            >
               <div className="flex items-start justify-between gap-3">
-                <div>
+                <div className="min-w-0">
                   <p className="font-semibold text-slate-900">{service.name}</p>
-                  <p className="text-sm text-slate-500 mt-1">Default price: ${service.default_price}</p>
+                  <p className="text-sm font-medium text-slate-400 mt-1">Default price: ${service.default_price}</p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex shrink-0 items-center gap-2">
                   <button
                     type="button"
                     onClick={() => openEditModal(service)}
-                    className="text-xs text-slate-600 font-medium hover:text-slate-800"
+                    className="hp-btn-secondary rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm"
                   >
                     Edit
                   </button>
@@ -200,7 +188,7 @@ export function ServicesClient({ initialServices, companyId }: ServicesClientPro
                       setErrorMessage('')
                       setDeletingService(service)
                     }}
-                    className="text-xs text-red-600 font-medium hover:text-red-700"
+                    className="hp-btn-secondary rounded-xl border border-red-100 bg-white px-3 py-1.5 text-xs font-medium text-[#dc2626] shadow-sm"
                   >
                     Delete
                   </button>
@@ -209,20 +197,24 @@ export function ServicesClient({ initialServices, companyId }: ServicesClientPro
             </div>
           ))
         )}
-      </main>
+      </div>
 
       {isFormOpen ? (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center px-4">
-          <div className="w-full max-w-md bg-white rounded-2xl border border-slate-100 p-5 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-900">{formTitle}</h2>
-              <button type="button" onClick={closeFormModal} className="text-sm text-slate-500 hover:text-slate-700">
+        <div className="hp-animate-modal-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-[2px]">
+          <div className="hp-animate-modal-panel w-full max-w-md rounded-2xl border border-slate-100 bg-white p-6 shadow-lg">
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold tracking-tight text-slate-900">{formTitle}</h2>
+              <button
+                type="button"
+                onClick={closeFormModal}
+                className="text-sm font-medium text-slate-400 transition-colors duration-200 hover:text-slate-600"
+              >
                 Close
               </button>
             </div>
-            <form onSubmit={handleSaveService} className="space-y-4">
+            <form onSubmit={handleSaveService} className="space-y-5">
               <div>
-                <label htmlFor="serviceName" className="text-sm font-medium text-slate-700">
+                <label htmlFor="serviceName" className="text-sm font-medium text-slate-400">
                   Service name
                 </label>
                 <input
@@ -231,12 +223,12 @@ export function ServicesClient({ initialServices, companyId }: ServicesClientPro
                   value={nameInput}
                   onChange={event => setNameInput(event.target.value)}
                   required
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Window Cleaning"
+                  className={field}
+                  placeholder="Window cleaning"
                 />
               </div>
               <div>
-                <label htmlFor="defaultPrice" className="text-sm font-medium text-slate-700">
+                <label htmlFor="defaultPrice" className="text-sm font-medium text-slate-400">
                   Default price
                 </label>
                 <input
@@ -248,25 +240,21 @@ export function ServicesClient({ initialServices, companyId }: ServicesClientPro
                   value={priceInput}
                   onChange={event => setPriceInput(event.target.value)}
                   required
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={field}
                   placeholder="150"
                 />
               </div>
-              {errorMessage ? <p className="text-sm text-red-600">{errorMessage}</p> : null}
-              <div className="flex justify-end gap-2">
+              {errorMessage ? <p className="text-sm font-medium text-[#dc2626]">{errorMessage}</p> : null}
+              <div className="flex justify-end gap-2 pt-1">
                 <button
                   type="button"
                   onClick={closeFormModal}
                   disabled={isSaving}
-                  className="text-sm font-medium px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  className="hp-btn-secondary text-sm font-medium px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm disabled:opacity-50"
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="text-sm font-medium px-4 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-                >
+                <button type="submit" disabled={isSaving} className="hp-btn-primary rounded-xl px-4 py-2 text-sm">
                   {isSaving ? 'Saving…' : saveLabel}
                 </button>
               </div>
@@ -276,34 +264,29 @@ export function ServicesClient({ initialServices, companyId }: ServicesClientPro
       ) : null}
 
       {deletingService ? (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 flex items-center justify-center px-4">
-          <div className="w-full max-w-sm bg-white rounded-2xl border border-slate-100 p-5 shadow-xl">
-            <h2 className="text-lg font-semibold text-slate-900">Delete service?</h2>
-            <p className="text-sm text-slate-600 mt-2">
-              Remove <span className="font-medium text-slate-900">{deletingService.name}</span> from your service list.
+        <div className="hp-animate-modal-backdrop fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-[2px]">
+          <div className="hp-animate-modal-panel w-full max-w-sm rounded-2xl border border-slate-100 bg-white p-6 shadow-lg">
+            <h2 className="text-lg font-semibold tracking-tight text-slate-900">Delete service?</h2>
+            <p className="mt-2 text-sm font-medium text-slate-400">
+              Remove <span className="font-semibold text-slate-900">{deletingService.name}</span> from your catalog.
             </p>
-            {errorMessage ? <p className="text-sm text-red-600 mt-3">{errorMessage}</p> : null}
-            <div className="mt-4 flex justify-end gap-2">
+            {errorMessage ? <p className="mt-3 text-sm font-medium text-[#dc2626]">{errorMessage}</p> : null}
+            <div className="mt-6 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => !isSaving && setDeletingService(null)}
                 disabled={isSaving}
-                className="text-sm font-medium px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                className="hp-btn-secondary text-sm font-medium px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm disabled:opacity-50"
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={handleDeleteService}
-                disabled={isSaving}
-                className="text-sm font-medium px-4 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-              >
+              <button type="button" onClick={handleDeleteService} disabled={isSaving} className="hp-btn-danger rounded-xl px-4 py-2 text-sm">
                 {isSaving ? 'Deleting…' : 'Delete'}
               </button>
             </div>
           </div>
         </div>
       ) : null}
-    </div>
+    </>
   )
 }
