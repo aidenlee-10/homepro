@@ -144,7 +144,7 @@ export function InviteAcceptClient({ token }: Props) {
           href="/"
           className="text-2xl font-semibold tracking-tight text-white transition-opacity duration-200 hover:opacity-90"
         >
-          HomePro
+          Clientflow
         </Link>
         <p className="mt-2 text-sm font-medium text-slate-400">Accept your team invite</p>
       </div>

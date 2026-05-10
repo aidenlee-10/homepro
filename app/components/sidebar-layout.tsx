@@ -159,7 +159,7 @@ export function SidebarLayout({
       <aside className="hidden md:flex md:w-[260px] md:fixed md:inset-y-0 md:left-0 z-30 flex-col bg-[#0f172a] text-slate-100 border-r border-slate-800/80">
         <div className="flex h-full flex-col px-5 pt-8 pb-6">
           <Link href="/" className="text-xl font-semibold tracking-tight text-white transition-opacity duration-200 hover:opacity-90">
-            HomePro
+            Clientflow
           </Link>
           {desktopNav}
           <button

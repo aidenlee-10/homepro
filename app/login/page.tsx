@@ -45,9 +45,9 @@ export default function LoginPage() {
             href="/"
             className="inline-block text-2xl font-semibold tracking-tight text-white transition-opacity duration-200 hover:opacity-90"
           >
-            HomePro
+            Clientflow
           </Link>
-          <p className="mt-2 text-sm font-medium text-slate-400">Sign in to your account</p>
+          <p className="mt-2 text-sm font-medium text-slate-400">Run your business. Grow your clients.</p>
         </div>
 
         <form
@@ -90,7 +90,7 @@ export default function LoginPage() {
           </button>
 
           <p className="text-sm font-medium text-slate-400 text-center">
-            New to HomePro?{' '}
+            New to Clientflow?{' '}
             <Link href="/signup" className="text-[#2563eb] transition-colors duration-200 hover:text-blue-800">
               Create an account
             </Link>

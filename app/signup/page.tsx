@@ -94,9 +94,9 @@ export default function SignupPage() {
             href="/"
             className="inline-block text-2xl font-semibold tracking-tight text-white transition-opacity duration-200 hover:opacity-90"
           >
-            HomePro
+            Clientflow
           </Link>
-          <p className="mt-2 text-sm font-medium text-slate-400">Create your business account</p>
+          <p className="mt-2 text-sm font-medium text-slate-400">Run your business. Grow your clients.</p>
         </div>
 
         <form
@@ -114,7 +114,7 @@ export default function SignupPage() {
               onChange={event => setCompanyName(event.target.value)}
               required
               className={inputClass}
-              placeholder="Apex Home Services"
+              placeholder="Summit Service Business"
             />
           </div>
 
